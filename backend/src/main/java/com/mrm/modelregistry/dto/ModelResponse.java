@@ -9,10 +9,14 @@ public class ModelResponse {
     private String modelName;
     private String modelVersion;
     private String modelSponsor;
-    private Model.BusinessLine businessLine;
-    private Model.ModelType modelType;
-    private Model.RiskRating riskRating;
-    private Model.Status status;
+    private String businessLine;
+    private String businessLineDisplayName;
+    private String modelType;
+    private String modelTypeDisplayName;
+    private String riskRating;
+    private String riskRatingDisplayName;
+    private String status;
+    private String statusDisplayName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -23,10 +27,14 @@ public class ModelResponse {
         this.modelName = model.getModelName();
         this.modelVersion = model.getModelVersion();
         this.modelSponsor = model.getModelSponsor();
-        this.businessLine = model.getBusinessLine();
-        this.modelType = model.getModelType();
-        this.riskRating = model.getRiskRating();
-        this.status = model.getStatus();
+        this.businessLine = model.getBusinessLine().getCode();
+        this.businessLineDisplayName = model.getBusinessLine().getDisplayName();
+        this.modelType = model.getModelType().getCode();
+        this.modelTypeDisplayName = model.getModelType().getDisplayName();
+        this.riskRating = model.getRiskRating().getCode();
+        this.riskRatingDisplayName = model.getRiskRating().getDisplayName();
+        this.status = model.getStatus().getCode();
+        this.statusDisplayName = model.getStatus().getDisplayName();
         this.createdAt = model.getCreatedAt();
         this.updatedAt = model.getUpdatedAt();
     }
@@ -63,36 +71,68 @@ public class ModelResponse {
         this.modelSponsor = modelSponsor;
     }
     
-    public Model.BusinessLine getBusinessLine() {
+    public String getBusinessLine() {
         return businessLine;
     }
     
-    public void setBusinessLine(Model.BusinessLine businessLine) {
+    public void setBusinessLine(String businessLine) {
         this.businessLine = businessLine;
     }
     
-    public Model.ModelType getModelType() {
+    public String getBusinessLineDisplayName() {
+        return businessLineDisplayName;
+    }
+    
+    public void setBusinessLineDisplayName(String businessLineDisplayName) {
+        this.businessLineDisplayName = businessLineDisplayName;
+    }
+    
+    public String getModelType() {
         return modelType;
     }
     
-    public void setModelType(Model.ModelType modelType) {
+    public void setModelType(String modelType) {
         this.modelType = modelType;
     }
     
-    public Model.RiskRating getRiskRating() {
+    public String getModelTypeDisplayName() {
+        return modelTypeDisplayName;
+    }
+    
+    public void setModelTypeDisplayName(String modelTypeDisplayName) {
+        this.modelTypeDisplayName = modelTypeDisplayName;
+    }
+    
+    public String getRiskRating() {
         return riskRating;
     }
     
-    public void setRiskRating(Model.RiskRating riskRating) {
+    public void setRiskRating(String riskRating) {
         this.riskRating = riskRating;
     }
     
-    public Model.Status getStatus() {
+    public String getRiskRatingDisplayName() {
+        return riskRatingDisplayName;
+    }
+    
+    public void setRiskRatingDisplayName(String riskRatingDisplayName) {
+        this.riskRatingDisplayName = riskRatingDisplayName;
+    }
+    
+    public String getStatus() {
         return status;
     }
     
-    public void setStatus(Model.Status status) {
+    public void setStatus(String status) {
         this.status = status;
+    }
+    
+    public String getStatusDisplayName() {
+        return statusDisplayName;
+    }
+    
+    public void setStatusDisplayName(String statusDisplayName) {
+        this.statusDisplayName = statusDisplayName;
     }
     
     public LocalDateTime getCreatedAt() {

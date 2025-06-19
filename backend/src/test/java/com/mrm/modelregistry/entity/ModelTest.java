@@ -6,20 +6,33 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest
+@ActiveProfiles("test")
 class ModelTest {
 
     private Validator validator;
+    private BusinessLineEntity businessLine;
+    private ModelTypeEntity modelType;
+    private RiskRatingEntity riskRating;
+    private StatusEntity status;
 
     @BeforeEach
     void setUp() {
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         validator = factory.getValidator();
+        
+        businessLine = new BusinessLineEntity("RETAIL_BANKING", "Retail Banking");
+        modelType = new ModelTypeEntity("CREDIT_RISK", "Credit Risk");
+        riskRating = new RiskRatingEntity("MEDIUM", "Medium");
+        status = new StatusEntity("IN_DEVELOPMENT", "In Development");
     }
 
     @Test
@@ -28,19 +41,19 @@ class ModelTest {
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
 
         assertEquals("Test Model", model.getModelName());
         assertEquals("v1.0", model.getModelVersion());
         assertEquals("Test Sponsor", model.getModelSponsor());
-        assertEquals(Model.BusinessLine.RETAIL_BANKING, model.getBusinessLine());
-        assertEquals(Model.ModelType.CREDIT_RISK, model.getModelType());
-        assertEquals(Model.RiskRating.MEDIUM, model.getRiskRating());
-        assertEquals(Model.Status.IN_DEVELOPMENT, model.getStatus());
+        assertEquals(businessLine, model.getBusinessLine());
+        assertEquals(modelType, model.getModelType());
+        assertEquals(riskRating, model.getRiskRating());
+        assertEquals(status, model.getStatus());
     }
 
     @Test
@@ -49,10 +62,10 @@ class ModelTest {
             "",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
 
         Set<ConstraintViolation<Model>> violations = validator.validate(model);
@@ -67,10 +80,10 @@ class ModelTest {
             "Test Model",
             "",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
 
         Set<ConstraintViolation<Model>> violations = validator.validate(model);
@@ -85,10 +98,10 @@ class ModelTest {
             "Test Model",
             "v1.0",
             "",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
 
         Set<ConstraintViolation<Model>> violations = validator.validate(model);
@@ -104,9 +117,9 @@ class ModelTest {
             "v1.0",
             "Test Sponsor",
             null,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            modelType,
+            riskRating,
+            status
         );
 
         Set<ConstraintViolation<Model>> violations = validator.validate(model);
@@ -116,36 +129,27 @@ class ModelTest {
     }
 
     @Test
-    void enums_BusinessLine_HasCorrectDisplayNames() {
-        assertEquals("Retail Banking", Model.BusinessLine.RETAIL_BANKING.getDisplayName());
-        assertEquals("Wholesale Lending", Model.BusinessLine.WHOLESALE_LENDING.getDisplayName());
-        assertEquals("Investment Banking", Model.BusinessLine.INVESTMENT_BANKING.getDisplayName());
-        assertEquals("Risk Management", Model.BusinessLine.RISK_MANAGEMENT.getDisplayName());
+    void entities_BusinessLine_HasCorrectDisplayNames() {
+        assertEquals("Retail Banking", businessLine.getDisplayName());
+        assertEquals("RETAIL_BANKING", businessLine.getCode());
     }
 
     @Test
-    void enums_ModelType_HasCorrectDisplayNames() {
-        assertEquals("Credit Risk", Model.ModelType.CREDIT_RISK.getDisplayName());
-        assertEquals("Market Risk", Model.ModelType.MARKET_RISK.getDisplayName());
-        assertEquals("Operational Risk", Model.ModelType.OPERATIONAL_RISK.getDisplayName());
-        assertEquals("AML", Model.ModelType.AML.getDisplayName());
-        assertEquals("Capital Calculation", Model.ModelType.CAPITAL_CALCULATION.getDisplayName());
-        assertEquals("Valuation", Model.ModelType.VALUATION.getDisplayName());
+    void entities_ModelType_HasCorrectDisplayNames() {
+        assertEquals("Credit Risk", modelType.getDisplayName());
+        assertEquals("CREDIT_RISK", modelType.getCode());
     }
 
     @Test
-    void enums_RiskRating_HasCorrectDisplayNames() {
-        assertEquals("High", Model.RiskRating.HIGH.getDisplayName());
-        assertEquals("Medium", Model.RiskRating.MEDIUM.getDisplayName());
-        assertEquals("Low", Model.RiskRating.LOW.getDisplayName());
+    void entities_RiskRating_HasCorrectDisplayNames() {
+        assertEquals("Medium", riskRating.getDisplayName());
+        assertEquals("MEDIUM", riskRating.getCode());
     }
 
     @Test
-    void enums_Status_HasCorrectDisplayNames() {
-        assertEquals("In Development", Model.Status.IN_DEVELOPMENT.getDisplayName());
-        assertEquals("Validated", Model.Status.VALIDATED.getDisplayName());
-        assertEquals("Production", Model.Status.PRODUCTION.getDisplayName());
-        assertEquals("Retired", Model.Status.RETIRED.getDisplayName());
+    void entities_Status_HasCorrectDisplayNames() {
+        assertEquals("In Development", status.getDisplayName());
+        assertEquals("IN_DEVELOPMENT", status.getCode());
     }
 
     @Test
@@ -154,10 +158,10 @@ class ModelTest {
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
 
         LocalDateTime beforePersist = LocalDateTime.now();
@@ -178,10 +182,10 @@ class ModelTest {
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
 
         model.onCreate();
@@ -203,10 +207,10 @@ class ModelTest {
         model.setModelName("Test Model");
         model.setModelVersion("v1.0");
         model.setModelSponsor("Test Sponsor");
-        model.setBusinessLine(Model.BusinessLine.RETAIL_BANKING);
-        model.setModelType(Model.ModelType.CREDIT_RISK);
-        model.setRiskRating(Model.RiskRating.MEDIUM);
-        model.setStatus(Model.Status.IN_DEVELOPMENT);
+        model.setBusinessLine(businessLine);
+        model.setModelType(modelType);
+        model.setRiskRating(riskRating);
+        model.setStatus(status);
 
         LocalDateTime now = LocalDateTime.now();
         model.setCreatedAt(now);
@@ -216,10 +220,10 @@ class ModelTest {
         assertEquals("Test Model", model.getModelName());
         assertEquals("v1.0", model.getModelVersion());
         assertEquals("Test Sponsor", model.getModelSponsor());
-        assertEquals(Model.BusinessLine.RETAIL_BANKING, model.getBusinessLine());
-        assertEquals(Model.ModelType.CREDIT_RISK, model.getModelType());
-        assertEquals(Model.RiskRating.MEDIUM, model.getRiskRating());
-        assertEquals(Model.Status.IN_DEVELOPMENT, model.getStatus());
+        assertEquals(businessLine, model.getBusinessLine());
+        assertEquals(modelType, model.getModelType());
+        assertEquals(riskRating, model.getRiskRating());
+        assertEquals(status, model.getStatus());
         assertEquals(now, model.getCreatedAt());
         assertEquals(now, model.getUpdatedAt());
     }

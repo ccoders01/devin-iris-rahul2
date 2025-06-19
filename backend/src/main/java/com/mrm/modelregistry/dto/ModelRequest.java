@@ -15,23 +15,23 @@ public class ModelRequest {
     @NotBlank(message = "Model sponsor is required")
     private String modelSponsor;
     
-    @NotNull(message = "Business line is required")
-    private Model.BusinessLine businessLine;
+    @NotBlank(message = "Business line is required")
+    private String businessLine;
     
-    @NotNull(message = "Model type is required")
-    private Model.ModelType modelType;
+    @NotBlank(message = "Model type is required")
+    private String modelType;
     
-    @NotNull(message = "Risk rating is required")
-    private Model.RiskRating riskRating;
+    @NotBlank(message = "Risk rating is required")
+    private String riskRating;
     
-    @NotNull(message = "Status is required")
-    private Model.Status status;
+    @NotBlank(message = "Status is required")
+    private String status;
     
     public ModelRequest() {}
     
     public ModelRequest(String modelName, String modelVersion, String modelSponsor,
-                       Model.BusinessLine businessLine, Model.ModelType modelType,
-                       Model.RiskRating riskRating, Model.Status status) {
+                       String businessLine, String modelType,
+                       String riskRating, String status) {
         this.modelName = modelName;
         this.modelVersion = modelVersion;
         this.modelSponsor = modelSponsor;
@@ -65,35 +65,35 @@ public class ModelRequest {
         this.modelSponsor = modelSponsor;
     }
     
-    public Model.BusinessLine getBusinessLine() {
+    public String getBusinessLine() {
         return businessLine;
     }
     
-    public void setBusinessLine(Model.BusinessLine businessLine) {
+    public void setBusinessLine(String businessLine) {
         this.businessLine = businessLine;
     }
     
-    public Model.ModelType getModelType() {
+    public String getModelType() {
         return modelType;
     }
     
-    public void setModelType(Model.ModelType modelType) {
+    public void setModelType(String modelType) {
         this.modelType = modelType;
     }
     
-    public Model.RiskRating getRiskRating() {
+    public String getRiskRating() {
         return riskRating;
     }
     
-    public void setRiskRating(Model.RiskRating riskRating) {
+    public void setRiskRating(String riskRating) {
         this.riskRating = riskRating;
     }
     
-    public Model.Status getStatus() {
+    public String getStatus() {
         return status;
     }
     
-    public void setStatus(Model.Status status) {
+    public void setStatus(String status) {
         this.status = status;
     }
 }

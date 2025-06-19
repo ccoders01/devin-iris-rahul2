@@ -3,14 +3,18 @@ package com.mrm.modelregistry.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mrm.modelregistry.dto.ModelRequest;
 import com.mrm.modelregistry.dto.ModelResponse;
-import com.mrm.modelregistry.entity.Model;
+import com.mrm.modelregistry.entity.*;
+import com.mrm.modelregistry.repository.*;
 import com.mrm.modelregistry.service.ModelService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -22,17 +26,36 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ModelController.class)
+@ExtendWith(MockitoExtension.class)
 class ModelControllerTest {
 
-    @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @Mock
     private ModelService modelService;
 
-    @Autowired
+    @Mock
+    private BusinessLineRepository businessLineRepository;
+
+    @Mock
+    private ModelTypeRepository modelTypeRepository;
+
+    @Mock
+    private RiskRatingRepository riskRatingRepository;
+
+    @Mock
+    private StatusRepository statusRepository;
+
+    @InjectMocks
+    private ModelController modelController;
+
     private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(modelController).build();
+        objectMapper = new ObjectMapper();
+    }
 
     @Test
     void registerModel_ValidRequest_ReturnsCreated() throws Exception {
@@ -40,10 +63,10 @@ class ModelControllerTest {
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            "RETAIL_BANKING",
+            "CREDIT_RISK",
+            "MEDIUM",
+            "IN_DEVELOPMENT"
         );
 
         ModelResponse response = new ModelResponse();
@@ -51,10 +74,14 @@ class ModelControllerTest {
         response.setModelName("Test Model");
         response.setModelVersion("v1.0");
         response.setModelSponsor("Test Sponsor");
-        response.setBusinessLine(Model.BusinessLine.RETAIL_BANKING);
-        response.setModelType(Model.ModelType.CREDIT_RISK);
-        response.setRiskRating(Model.RiskRating.MEDIUM);
-        response.setStatus(Model.Status.IN_DEVELOPMENT);
+        response.setBusinessLine("RETAIL_BANKING");
+        response.setBusinessLineDisplayName("Retail Banking");
+        response.setModelType("CREDIT_RISK");
+        response.setModelTypeDisplayName("Credit Risk");
+        response.setRiskRating("MEDIUM");
+        response.setRiskRatingDisplayName("Medium");
+        response.setStatus("IN_DEVELOPMENT");
+        response.setStatusDisplayName("In Development");
         response.setCreatedAt(LocalDateTime.now());
         response.setUpdatedAt(LocalDateTime.now());
 
@@ -67,7 +94,9 @@ class ModelControllerTest {
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.modelName").value("Test Model"))
                 .andExpect(jsonPath("$.modelVersion").value("v1.0"))
-                .andExpect(jsonPath("$.modelSponsor").value("Test Sponsor"));
+                .andExpect(jsonPath("$.modelSponsor").value("Test Sponsor"))
+                .andExpect(jsonPath("$.businessLine").value("RETAIL_BANKING"))
+                .andExpect(jsonPath("$.businessLineDisplayName").value("Retail Banking"));
     }
 
     @Test
@@ -131,6 +160,35 @@ class ModelControllerTest {
 
     @Test
     void getEnumValues_ReturnsAllEnums() throws Exception {
+        when(businessLineRepository.findAll()).thenReturn(Arrays.asList(
+            new BusinessLineEntity("RETAIL_BANKING", "Retail Banking"),
+            new BusinessLineEntity("WHOLESALE_LENDING", "Wholesale Lending"),
+            new BusinessLineEntity("INVESTMENT_BANKING", "Investment Banking"),
+            new BusinessLineEntity("RISK_MANAGEMENT", "Risk Management")
+        ));
+        
+        when(modelTypeRepository.findAll()).thenReturn(Arrays.asList(
+            new ModelTypeEntity("CREDIT_RISK", "Credit Risk"),
+            new ModelTypeEntity("MARKET_RISK", "Market Risk"),
+            new ModelTypeEntity("OPERATIONAL_RISK", "Operational Risk"),
+            new ModelTypeEntity("AML", "AML"),
+            new ModelTypeEntity("CAPITAL_CALCULATION", "Capital Calculation"),
+            new ModelTypeEntity("VALUATION", "Valuation")
+        ));
+        
+        when(riskRatingRepository.findAll()).thenReturn(Arrays.asList(
+            new RiskRatingEntity("HIGH", "High"),
+            new RiskRatingEntity("MEDIUM", "Medium"),
+            new RiskRatingEntity("LOW", "Low")
+        ));
+        
+        when(statusRepository.findAll()).thenReturn(Arrays.asList(
+            new StatusEntity("IN_DEVELOPMENT", "In Development"),
+            new StatusEntity("VALIDATED", "Validated"),
+            new StatusEntity("PRODUCTION", "Production"),
+            new StatusEntity("RETIRED", "Retired")
+        ));
+
         mockMvc.perform(get("/api/models/enums"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.businessLines").exists())

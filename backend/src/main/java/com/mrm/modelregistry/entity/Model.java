@@ -26,24 +26,24 @@ public class Model {
     private String modelSponsor;
     
     @NotNull(message = "Business line is required")
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private BusinessLine businessLine;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "business_line_id", nullable = false)
+    private BusinessLineEntity businessLine;
     
     @NotNull(message = "Model type is required")
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ModelType modelType;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "model_type_id", nullable = false)
+    private ModelTypeEntity modelType;
     
     @NotNull(message = "Risk rating is required")
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private RiskRating riskRating;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "risk_rating_id", nullable = false)
+    private RiskRatingEntity riskRating;
     
     @NotNull(message = "Status is required")
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Status status;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "status_id", nullable = false)
+    private StatusEntity status;
     
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -51,74 +51,7 @@ public class Model {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
     
-    public enum BusinessLine {
-        RETAIL_BANKING("Retail Banking"),
-        WHOLESALE_LENDING("Wholesale Lending"),
-        INVESTMENT_BANKING("Investment Banking"),
-        RISK_MANAGEMENT("Risk Management");
-        
-        private final String displayName;
-        
-        BusinessLine(String displayName) {
-            this.displayName = displayName;
-        }
-        
-        public String getDisplayName() {
-            return displayName;
-        }
-    }
-    
-    public enum ModelType {
-        CREDIT_RISK("Credit Risk"),
-        MARKET_RISK("Market Risk"),
-        OPERATIONAL_RISK("Operational Risk"),
-        AML("AML"),
-        CAPITAL_CALCULATION("Capital Calculation"),
-        VALUATION("Valuation");
-        
-        private final String displayName;
-        
-        ModelType(String displayName) {
-            this.displayName = displayName;
-        }
-        
-        public String getDisplayName() {
-            return displayName;
-        }
-    }
-    
-    public enum RiskRating {
-        HIGH("High"),
-        MEDIUM("Medium"),
-        LOW("Low");
-        
-        private final String displayName;
-        
-        RiskRating(String displayName) {
-            this.displayName = displayName;
-        }
-        
-        public String getDisplayName() {
-            return displayName;
-        }
-    }
-    
-    public enum Status {
-        IN_DEVELOPMENT("In Development"),
-        VALIDATED("Validated"),
-        PRODUCTION("Production"),
-        RETIRED("Retired");
-        
-        private final String displayName;
-        
-        Status(String displayName) {
-            this.displayName = displayName;
-        }
-        
-        public String getDisplayName() {
-            return displayName;
-        }
-    }
+
     
     @PrePersist
     protected void onCreate() {
@@ -134,7 +67,7 @@ public class Model {
     public Model() {}
     
     public Model(String modelName, String modelVersion, String modelSponsor, 
-                BusinessLine businessLine, ModelType modelType, RiskRating riskRating, Status status) {
+                BusinessLineEntity businessLine, ModelTypeEntity modelType, RiskRatingEntity riskRating, StatusEntity status) {
         this.modelName = modelName;
         this.modelVersion = modelVersion;
         this.modelSponsor = modelSponsor;
@@ -176,35 +109,35 @@ public class Model {
         this.modelSponsor = modelSponsor;
     }
     
-    public BusinessLine getBusinessLine() {
+    public BusinessLineEntity getBusinessLine() {
         return businessLine;
     }
     
-    public void setBusinessLine(BusinessLine businessLine) {
+    public void setBusinessLine(BusinessLineEntity businessLine) {
         this.businessLine = businessLine;
     }
     
-    public ModelType getModelType() {
+    public ModelTypeEntity getModelType() {
         return modelType;
     }
     
-    public void setModelType(ModelType modelType) {
+    public void setModelType(ModelTypeEntity modelType) {
         this.modelType = modelType;
     }
     
-    public RiskRating getRiskRating() {
+    public RiskRatingEntity getRiskRating() {
         return riskRating;
     }
     
-    public void setRiskRating(RiskRating riskRating) {
+    public void setRiskRating(RiskRatingEntity riskRating) {
         this.riskRating = riskRating;
     }
     
-    public Status getStatus() {
+    public StatusEntity getStatus() {
         return status;
     }
     
-    public void setStatus(Status status) {
+    public void setStatus(StatusEntity status) {
         this.status = status;
     }
     
