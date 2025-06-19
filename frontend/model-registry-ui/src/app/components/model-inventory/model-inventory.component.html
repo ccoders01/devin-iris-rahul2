@@ -1,0 +1,70 @@
+<div class="container">
+  <div class="inventory-header">
+    <h2 class="title">Model Inventory</h2>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="navigateToRegistration()">
+        Register New Model
+      </button>
+      <button class="btn btn-secondary" (click)="refreshModels()">
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-error">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading models...</p>
+  </div>
+
+  <div *ngIf="!isLoading && models.length === 0 && !errorMessage" class="empty-state">
+    <div class="empty-icon">📋</div>
+    <h3>No models registered yet</h3>
+    <p>Get started by registering your first model.</p>
+    <button class="btn btn-primary" (click)="navigateToRegistration()">
+      Register First Model
+    </button>
+  </div>
+
+  <div *ngIf="!isLoading && models.length > 0" class="table-container">
+    <table class="models-table">
+      <thead>
+        <tr>
+          <th>Model ID</th>
+          <th>Model Name</th>
+          <th>Version</th>
+          <th>Sponsor</th>
+          <th>Business Line</th>
+          <th>Model Type</th>
+          <th>Risk Rating</th>
+          <th>Status</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let model of models" class="table-row">
+          <td class="model-id">{{ model.id }}</td>
+          <td class="model-name">{{ model.modelName }}</td>
+          <td>{{ model.modelVersion }}</td>
+          <td>{{ model.modelSponsor }}</td>
+          <td>{{ getDisplayValue(model.businessLine) }}</td>
+          <td>{{ getDisplayValue(model.modelType) }}</td>
+          <td>
+            <span class="risk-badge" [class]="'risk-' + model.riskRating.toLowerCase()">
+              {{ getDisplayValue(model.riskRating) }}
+            </span>
+          </td>
+          <td>
+            <span class="status-badge" [class]="'status-' + model.status.toLowerCase().replace('_', '-')">
+              {{ getDisplayValue(model.status) }}
+            </span>
+          </td>
+          <td class="date-cell">{{ formatDate(model.createdAt) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

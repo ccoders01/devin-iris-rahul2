@@ -1,0 +1,151 @@
+<div class="container">
+  <div class="registration-card">
+    <h2 class="title">Register New Model</h2>
+    
+    <div *ngIf="successMessage" class="alert alert-success">
+      {{ successMessage }}
+    </div>
+    
+    <div *ngIf="errorMessage" class="alert alert-error">
+      {{ errorMessage }}
+    </div>
+
+    <form [formGroup]="registrationForm" (ngSubmit)="onSubmit()" class="registration-form">
+      <div class="form-group">
+        <label for="modelName" class="form-label">Model Name *</label>
+        <input
+          type="text"
+          id="modelName"
+          formControlName="modelName"
+          class="form-input"
+          [class.error]="getFieldError('modelName')"
+          placeholder="Enter model name"
+        />
+        <div *ngIf="getFieldError('modelName')" class="error-message">
+          {{ getFieldError('modelName') }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="modelVersion" class="form-label">Model Version *</label>
+        <input
+          type="text"
+          id="modelVersion"
+          formControlName="modelVersion"
+          class="form-input"
+          [class.error]="getFieldError('modelVersion')"
+          placeholder="e.g., v1.0"
+        />
+        <div *ngIf="getFieldError('modelVersion')" class="error-message">
+          {{ getFieldError('modelVersion') }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="modelSponsor" class="form-label">Model Sponsor *</label>
+        <input
+          type="text"
+          id="modelSponsor"
+          formControlName="modelSponsor"
+          class="form-input"
+          [class.error]="getFieldError('modelSponsor')"
+          placeholder="Enter sponsor name"
+        />
+        <div *ngIf="getFieldError('modelSponsor')" class="error-message">
+          {{ getFieldError('modelSponsor') }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="businessLine" class="form-label">Business Line *</label>
+        <select
+          id="businessLine"
+          formControlName="businessLine"
+          class="form-select"
+          [class.error]="getFieldError('businessLine')"
+        >
+          <option value="">Select Business Line</option>
+          <option *ngFor="let option of enumValues?.businessLines" [value]="option.value">
+            {{ option.displayName }}
+          </option>
+        </select>
+        <div *ngIf="getFieldError('businessLine')" class="error-message">
+          {{ getFieldError('businessLine') }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="modelType" class="form-label">Model Type *</label>
+        <select
+          id="modelType"
+          formControlName="modelType"
+          class="form-select"
+          [class.error]="getFieldError('modelType')"
+        >
+          <option value="">Select Model Type</option>
+          <option *ngFor="let option of enumValues?.modelTypes" [value]="option.value">
+            {{ option.displayName }}
+          </option>
+        </select>
+        <div *ngIf="getFieldError('modelType')" class="error-message">
+          {{ getFieldError('modelType') }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="riskRating" class="form-label">Risk Rating *</label>
+        <select
+          id="riskRating"
+          formControlName="riskRating"
+          class="form-select"
+          [class.error]="getFieldError('riskRating')"
+        >
+          <option value="">Select Risk Rating</option>
+          <option *ngFor="let option of enumValues?.riskRatings" [value]="option.value">
+            {{ option.displayName }}
+          </option>
+        </select>
+        <div *ngIf="getFieldError('riskRating')" class="error-message">
+          {{ getFieldError('riskRating') }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="status" class="form-label">Status *</label>
+        <select
+          id="status"
+          formControlName="status"
+          class="form-select"
+          [class.error]="getFieldError('status')"
+        >
+          <option value="">Select Status</option>
+          <option *ngFor="let option of enumValues?.statuses" [value]="option.value">
+            {{ option.displayName }}
+          </option>
+        </select>
+        <div *ngIf="getFieldError('status')" class="error-message">
+          {{ getFieldError('status') }}
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="isSubmitting"
+        >
+          <span *ngIf="isSubmitting">Registering...</span>
+          <span *ngIf="!isSubmitting">Register Model</span>
+        </button>
+        
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="router.navigate(['/inventory'])"
+        >
+          View Inventory
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
