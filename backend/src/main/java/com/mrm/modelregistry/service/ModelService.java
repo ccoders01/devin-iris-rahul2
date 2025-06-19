@@ -2,8 +2,8 @@ package com.mrm.modelregistry.service;
 
 import com.mrm.modelregistry.dto.ModelRequest;
 import com.mrm.modelregistry.dto.ModelResponse;
-import com.mrm.modelregistry.entity.Model;
-import com.mrm.modelregistry.repository.ModelRepository;
+import com.mrm.modelregistry.entity.*;
+import com.mrm.modelregistry.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,15 +16,39 @@ public class ModelService {
     @Autowired
     private ModelRepository modelRepository;
     
+    @Autowired
+    private BusinessLineRepository businessLineRepository;
+    
+    @Autowired
+    private ModelTypeRepository modelTypeRepository;
+    
+    @Autowired
+    private RiskRatingRepository riskRatingRepository;
+    
+    @Autowired
+    private StatusRepository statusRepository;
+    
     public ModelResponse registerModel(ModelRequest request) {
+        BusinessLineEntity businessLine = businessLineRepository.findByCode(request.getBusinessLine())
+            .orElseThrow(() -> new RuntimeException("Business line not found: " + request.getBusinessLine()));
+        
+        ModelTypeEntity modelType = modelTypeRepository.findByCode(request.getModelType())
+            .orElseThrow(() -> new RuntimeException("Model type not found: " + request.getModelType()));
+        
+        RiskRatingEntity riskRating = riskRatingRepository.findByCode(request.getRiskRating())
+            .orElseThrow(() -> new RuntimeException("Risk rating not found: " + request.getRiskRating()));
+        
+        StatusEntity status = statusRepository.findByCode(request.getStatus())
+            .orElseThrow(() -> new RuntimeException("Status not found: " + request.getStatus()));
+        
         Model model = new Model(
             request.getModelName(),
             request.getModelVersion(),
             request.getModelSponsor(),
-            request.getBusinessLine(),
-            request.getModelType(),
-            request.getRiskRating(),
-            request.getStatus()
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
         
         Model savedModel = modelRepository.save(model);

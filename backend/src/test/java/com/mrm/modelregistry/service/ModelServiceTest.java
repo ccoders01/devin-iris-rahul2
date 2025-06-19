@@ -2,8 +2,9 @@ package com.mrm.modelregistry.service;
 
 import com.mrm.modelregistry.dto.ModelRequest;
 import com.mrm.modelregistry.dto.ModelResponse;
-import com.mrm.modelregistry.entity.Model;
-import com.mrm.modelregistry.repository.ModelRepository;
+import com.mrm.modelregistry.entity.*;
+import com.mrm.modelregistry.repository.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -25,8 +26,33 @@ class ModelServiceTest {
     @Mock
     private ModelRepository modelRepository;
 
+    @Mock
+    private BusinessLineRepository businessLineRepository;
+
+    @Mock
+    private ModelTypeRepository modelTypeRepository;
+
+    @Mock
+    private RiskRatingRepository riskRatingRepository;
+
+    @Mock
+    private StatusRepository statusRepository;
+
     @InjectMocks
     private ModelService modelService;
+
+    private BusinessLineEntity businessLine;
+    private ModelTypeEntity modelType;
+    private RiskRatingEntity riskRating;
+    private StatusEntity status;
+
+    @BeforeEach
+    void setUp() {
+        businessLine = new BusinessLineEntity("RETAIL_BANKING", "Retail Banking");
+        modelType = new ModelTypeEntity("CREDIT_RISK", "Credit Risk");
+        riskRating = new RiskRatingEntity("MEDIUM", "Medium");
+        status = new StatusEntity("IN_DEVELOPMENT", "In Development");
+    }
 
     @Test
     void registerModel_ValidRequest_ReturnsModelResponse() {
@@ -34,25 +60,29 @@ class ModelServiceTest {
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            "RETAIL_BANKING",
+            "CREDIT_RISK",
+            "MEDIUM",
+            "IN_DEVELOPMENT"
         );
 
         Model savedModel = new Model(
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
         savedModel.setId(1L);
         savedModel.setCreatedAt(LocalDateTime.now());
         savedModel.setUpdatedAt(LocalDateTime.now());
 
+        when(businessLineRepository.findByCode("RETAIL_BANKING")).thenReturn(Optional.of(businessLine));
+        when(modelTypeRepository.findByCode("CREDIT_RISK")).thenReturn(Optional.of(modelType));
+        when(riskRatingRepository.findByCode("MEDIUM")).thenReturn(Optional.of(riskRating));
+        when(statusRepository.findByCode("IN_DEVELOPMENT")).thenReturn(Optional.of(status));
         when(modelRepository.save(any(Model.class))).thenReturn(savedModel);
 
         ModelResponse response = modelService.registerModel(request);
@@ -62,12 +92,16 @@ class ModelServiceTest {
         assertEquals("Test Model", response.getModelName());
         assertEquals("v1.0", response.getModelVersion());
         assertEquals("Test Sponsor", response.getModelSponsor());
-        assertEquals(Model.BusinessLine.RETAIL_BANKING, response.getBusinessLine());
-        assertEquals(Model.ModelType.CREDIT_RISK, response.getModelType());
-        assertEquals(Model.RiskRating.MEDIUM, response.getRiskRating());
-        assertEquals(Model.Status.IN_DEVELOPMENT, response.getStatus());
+        assertEquals("RETAIL_BANKING", response.getBusinessLine());
+        assertEquals("CREDIT_RISK", response.getModelType());
+        assertEquals("MEDIUM", response.getRiskRating());
+        assertEquals("IN_DEVELOPMENT", response.getStatus());
 
         verify(modelRepository, times(1)).save(any(Model.class));
+        verify(businessLineRepository, times(1)).findByCode("RETAIL_BANKING");
+        verify(modelTypeRepository, times(1)).findByCode("CREDIT_RISK");
+        verify(riskRatingRepository, times(1)).findByCode("MEDIUM");
+        verify(statusRepository, times(1)).findByCode("IN_DEVELOPMENT");
     }
 
     @Test
@@ -76,10 +110,10 @@ class ModelServiceTest {
             "Model 1",
             "v1.0",
             "Sponsor 1",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.HIGH,
-            Model.Status.PRODUCTION
+            businessLine,
+            modelType,
+            new RiskRatingEntity("HIGH", "High"),
+            new StatusEntity("PRODUCTION", "Production")
         );
         model1.setId(1L);
 
@@ -87,10 +121,10 @@ class ModelServiceTest {
             "Model 2",
             "v2.0",
             "Sponsor 2",
-            Model.BusinessLine.INVESTMENT_BANKING,
-            Model.ModelType.MARKET_RISK,
-            Model.RiskRating.LOW,
-            Model.Status.VALIDATED
+            new BusinessLineEntity("INVESTMENT_BANKING", "Investment Banking"),
+            new ModelTypeEntity("MARKET_RISK", "Market Risk"),
+            new RiskRatingEntity("LOW", "Low"),
+            new StatusEntity("VALIDATED", "Validated")
         );
         model2.setId(2L);
 
@@ -114,10 +148,10 @@ class ModelServiceTest {
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
         model.setId(1L);
 

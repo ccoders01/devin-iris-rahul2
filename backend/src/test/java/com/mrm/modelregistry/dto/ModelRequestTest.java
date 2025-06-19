@@ -1,6 +1,5 @@
 package com.mrm.modelregistry.dto;
 
-import com.mrm.modelregistry.entity.Model;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -28,19 +27,19 @@ class ModelRequestTest {
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            "RETAIL_BANKING",
+            "CREDIT_RISK",
+            "MEDIUM",
+            "IN_DEVELOPMENT"
         );
 
         assertEquals("Test Model", request.getModelName());
         assertEquals("v1.0", request.getModelVersion());
         assertEquals("Test Sponsor", request.getModelSponsor());
-        assertEquals(Model.BusinessLine.RETAIL_BANKING, request.getBusinessLine());
-        assertEquals(Model.ModelType.CREDIT_RISK, request.getModelType());
-        assertEquals(Model.RiskRating.MEDIUM, request.getRiskRating());
-        assertEquals(Model.Status.IN_DEVELOPMENT, request.getStatus());
+        assertEquals("RETAIL_BANKING", request.getBusinessLine());
+        assertEquals("CREDIT_RISK", request.getModelType());
+        assertEquals("MEDIUM", request.getRiskRating());
+        assertEquals("IN_DEVELOPMENT", request.getStatus());
     }
 
     @Test
@@ -62,10 +61,10 @@ class ModelRequestTest {
             "",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            "RETAIL_BANKING",
+            "CREDIT_RISK",
+            "MEDIUM",
+            "IN_DEVELOPMENT"
         );
 
         Set<ConstraintViolation<ModelRequest>> violations = validator.validate(request);
@@ -80,10 +79,10 @@ class ModelRequestTest {
             null,
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            "RETAIL_BANKING",
+            "CREDIT_RISK",
+            "MEDIUM",
+            "IN_DEVELOPMENT"
         );
 
         Set<ConstraintViolation<ModelRequest>> violations = validator.validate(request);
@@ -98,10 +97,10 @@ class ModelRequestTest {
             "Test Model",
             "",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            "RETAIL_BANKING",
+            "CREDIT_RISK",
+            "MEDIUM",
+            "IN_DEVELOPMENT"
         );
 
         Set<ConstraintViolation<ModelRequest>> violations = validator.validate(request);
@@ -116,10 +115,10 @@ class ModelRequestTest {
             "Test Model",
             "v1.0",
             "",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            "RETAIL_BANKING",
+            "CREDIT_RISK",
+            "MEDIUM",
+            "IN_DEVELOPMENT"
         );
 
         Set<ConstraintViolation<ModelRequest>> violations = validator.validate(request);
@@ -135,9 +134,9 @@ class ModelRequestTest {
             "v1.0",
             "Test Sponsor",
             null,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            "CREDIT_RISK",
+            "MEDIUM",
+            "IN_DEVELOPMENT"
         );
 
         Set<ConstraintViolation<ModelRequest>> violations = validator.validate(request);
@@ -152,10 +151,10 @@ class ModelRequestTest {
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            "RETAIL_BANKING",
+            "CREDIT_RISK",
+            "MEDIUM",
+            "IN_DEVELOPMENT"
         );
 
         Set<ConstraintViolation<ModelRequest>> violations = validator.validate(request);
@@ -170,17 +169,17 @@ class ModelRequestTest {
         request.setModelName("Test Model");
         request.setModelVersion("v1.0");
         request.setModelSponsor("Test Sponsor");
-        request.setBusinessLine(Model.BusinessLine.RETAIL_BANKING);
-        request.setModelType(Model.ModelType.CREDIT_RISK);
-        request.setRiskRating(Model.RiskRating.MEDIUM);
-        request.setStatus(Model.Status.IN_DEVELOPMENT);
+        request.setBusinessLine("RETAIL_BANKING");
+        request.setModelType("CREDIT_RISK");
+        request.setRiskRating("MEDIUM");
+        request.setStatus("IN_DEVELOPMENT");
 
         assertEquals("Test Model", request.getModelName());
         assertEquals("v1.0", request.getModelVersion());
         assertEquals("Test Sponsor", request.getModelSponsor());
-        assertEquals(Model.BusinessLine.RETAIL_BANKING, request.getBusinessLine());
-        assertEquals(Model.ModelType.CREDIT_RISK, request.getModelType());
-        assertEquals(Model.RiskRating.MEDIUM, request.getRiskRating());
-        assertEquals(Model.Status.IN_DEVELOPMENT, request.getStatus());
+        assertEquals("RETAIL_BANKING", request.getBusinessLine());
+        assertEquals("CREDIT_RISK", request.getModelType());
+        assertEquals("MEDIUM", request.getRiskRating());
+        assertEquals("IN_DEVELOPMENT", request.getStatus());
     }
 }

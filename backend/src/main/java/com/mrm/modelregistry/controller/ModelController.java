@@ -2,7 +2,8 @@ package com.mrm.modelregistry.controller;
 
 import com.mrm.modelregistry.dto.ModelRequest;
 import com.mrm.modelregistry.dto.ModelResponse;
-import com.mrm.modelregistry.entity.Model;
+import com.mrm.modelregistry.entity.*;
+import com.mrm.modelregistry.repository.*;
 import com.mrm.modelregistry.service.ModelService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,6 +28,18 @@ public class ModelController {
     
     @Autowired
     private ModelService modelService;
+    
+    @Autowired
+    private BusinessLineRepository businessLineRepository;
+    
+    @Autowired
+    private ModelTypeRepository modelTypeRepository;
+    
+    @Autowired
+    private RiskRatingRepository riskRatingRepository;
+    
+    @Autowired
+    private StatusRepository statusRepository;
     
     @PostMapping
     @Operation(summary = "Register a new model", description = "Register a new model with all required attributes")
@@ -67,17 +80,17 @@ public class ModelController {
     @ApiResponse(responseCode = "200", description = "Successfully retrieved enum values")
     public ResponseEntity<Map<String, List<Map<String, String>>>> getEnumValues() {
         Map<String, List<Map<String, String>>> enums = Map.of(
-            "businessLines", Arrays.stream(Model.BusinessLine.values())
-                .map(bl -> Map.of("value", bl.name(), "displayName", bl.getDisplayName()))
+            "businessLines", businessLineRepository.findAll().stream()
+                .map(bl -> Map.of("value", bl.getCode(), "displayName", bl.getDisplayName()))
                 .collect(Collectors.toList()),
-            "modelTypes", Arrays.stream(Model.ModelType.values())
-                .map(mt -> Map.of("value", mt.name(), "displayName", mt.getDisplayName()))
+            "modelTypes", modelTypeRepository.findAll().stream()
+                .map(mt -> Map.of("value", mt.getCode(), "displayName", mt.getDisplayName()))
                 .collect(Collectors.toList()),
-            "riskRatings", Arrays.stream(Model.RiskRating.values())
-                .map(rr -> Map.of("value", rr.name(), "displayName", rr.getDisplayName()))
+            "riskRatings", riskRatingRepository.findAll().stream()
+                .map(rr -> Map.of("value", rr.getCode(), "displayName", rr.getDisplayName()))
                 .collect(Collectors.toList()),
-            "statuses", Arrays.stream(Model.Status.values())
-                .map(s -> Map.of("value", s.name(), "displayName", s.getDisplayName()))
+            "statuses", statusRepository.findAll().stream()
+                .map(s -> Map.of("value", s.getCode(), "displayName", s.getDisplayName()))
                 .collect(Collectors.toList())
         );
         return ResponseEntity.ok(enums);

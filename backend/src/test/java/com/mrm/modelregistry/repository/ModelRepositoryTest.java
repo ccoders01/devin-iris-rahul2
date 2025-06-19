@@ -1,8 +1,10 @@
 package com.mrm.modelregistry.repository;
 
-import com.mrm.modelregistry.entity.Model;
+import com.mrm.modelregistry.entity.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
@@ -12,6 +14,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 class ModelRepositoryTest {
 
     @Autowired
@@ -20,16 +23,42 @@ class ModelRepositoryTest {
     @Autowired
     private ModelRepository modelRepository;
 
+    private BusinessLineEntity businessLine;
+    private ModelTypeEntity modelType;
+    private RiskRatingEntity riskRating;
+    private StatusEntity status;
+
+    @BeforeEach
+    void setUp() {
+        businessLine = new BusinessLineEntity("RETAIL_BANKING", "Retail Banking");
+        businessLine = entityManager.persistAndFlush(businessLine);
+        
+        modelType = new ModelTypeEntity("CREDIT_RISK", "Credit Risk");
+        modelType = entityManager.persistAndFlush(modelType);
+        
+        riskRating = new RiskRatingEntity("MEDIUM", "Medium");
+        riskRating = entityManager.persistAndFlush(riskRating);
+        
+        status = new StatusEntity("IN_DEVELOPMENT", "In Development");
+        status = entityManager.persistAndFlush(status);
+    }
+
+    @Test
+    void contextLoads() {
+        assertNotNull(entityManager);
+        assertNotNull(modelRepository);
+    }
+
     @Test
     void save_ValidModel_ReturnsModelWithId() {
         Model model = new Model(
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
 
         Model savedModel = modelRepository.save(model);
@@ -39,10 +68,10 @@ class ModelRepositoryTest {
         assertEquals("Test Model", savedModel.getModelName());
         assertEquals("v1.0", savedModel.getModelVersion());
         assertEquals("Test Sponsor", savedModel.getModelSponsor());
-        assertEquals(Model.BusinessLine.RETAIL_BANKING, savedModel.getBusinessLine());
-        assertEquals(Model.ModelType.CREDIT_RISK, savedModel.getModelType());
-        assertEquals(Model.RiskRating.MEDIUM, savedModel.getRiskRating());
-        assertEquals(Model.Status.IN_DEVELOPMENT, savedModel.getStatus());
+        assertEquals(businessLine, savedModel.getBusinessLine());
+        assertEquals(modelType, savedModel.getModelType());
+        assertEquals(riskRating, savedModel.getRiskRating());
+        assertEquals(status, savedModel.getStatus());
         assertNotNull(savedModel.getCreatedAt());
         assertNotNull(savedModel.getUpdatedAt());
     }
@@ -53,10 +82,10 @@ class ModelRepositoryTest {
             "Test Model",
             "v1.0",
             "Test Sponsor",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.MEDIUM,
-            Model.Status.IN_DEVELOPMENT
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
 
         Model savedModel = entityManager.persistAndFlush(model);
@@ -71,7 +100,6 @@ class ModelRepositoryTest {
     @Test
     void findById_NonExistingId_ReturnsEmpty() {
         Optional<Model> foundModel = modelRepository.findById(999L);
-
         assertFalse(foundModel.isPresent());
     }
 
@@ -81,20 +109,20 @@ class ModelRepositoryTest {
             "Model 1",
             "v1.0",
             "Sponsor 1",
-            Model.BusinessLine.RETAIL_BANKING,
-            Model.ModelType.CREDIT_RISK,
-            Model.RiskRating.HIGH,
-            Model.Status.PRODUCTION
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
 
         Model model2 = new Model(
             "Model 2",
             "v2.0",
             "Sponsor 2",
-            Model.BusinessLine.INVESTMENT_BANKING,
-            Model.ModelType.MARKET_RISK,
-            Model.RiskRating.LOW,
-            Model.Status.VALIDATED
+            businessLine,
+            modelType,
+            riskRating,
+            status
         );
 
         entityManager.persistAndFlush(model1);
@@ -110,7 +138,6 @@ class ModelRepositoryTest {
     @Test
     void findAll_EmptyRepository_ReturnsEmptyList() {
         List<Model> models = modelRepository.findAll();
-
         assertTrue(models.isEmpty());
     }
 }
