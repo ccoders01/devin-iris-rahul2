@@ -54,8 +54,12 @@ public class ModelController {
         @ApiResponse(responseCode = "404", description = "Model not found")
     })
     public ResponseEntity<ModelResponse> getModelById(@PathVariable Long id) {
-        ModelResponse model = modelService.getModelById(id);
-        return ResponseEntity.ok(model);
+        try {
+            ModelResponse model = modelService.getModelById(id);
+            return ResponseEntity.ok(model);
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
     
     @GetMapping("/enums")
