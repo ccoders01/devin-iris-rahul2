@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/models")
 @CrossOrigin(origins = "*")
 @Tag(name = "Model Management", description = "APIs for Model Registration and Inventory Management")
+@Slf4j
 public class ModelController {
     
     @Autowired
@@ -48,7 +50,9 @@ public class ModelController {
         @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     public ResponseEntity<ModelResponse> registerModel(@Valid @RequestBody ModelRequest request) {
+        log.info("Registering new model: {}", request.getModelName());
         ModelResponse response = modelService.registerModel(request);
+        log.info("Successfully registered model with ID: {}", response.getId());
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
     
@@ -56,7 +60,9 @@ public class ModelController {
     @Operation(summary = "Get all models", description = "Retrieve all registered models for inventory display")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved all models")
     public ResponseEntity<List<ModelResponse>> getAllModels() {
+        log.info("Retrieving all models");
         List<ModelResponse> models = modelService.getAllModels();
+        log.info("Retrieved {} models", models.size());
         return ResponseEntity.ok(models);
     }
     
@@ -67,10 +73,13 @@ public class ModelController {
         @ApiResponse(responseCode = "404", description = "Model not found")
     })
     public ResponseEntity<ModelResponse> getModelById(@PathVariable Long id) {
+        log.info("Retrieving model with ID: {}", id);
         try {
             ModelResponse model = modelService.getModelById(id);
+            log.info("Successfully retrieved model: {}", model.getModelName());
             return ResponseEntity.ok(model);
         } catch (RuntimeException e) {
+            log.warn("Model not found with ID: {}", id);
             return ResponseEntity.notFound().build();
         }
     }
@@ -79,6 +88,7 @@ public class ModelController {
     @Operation(summary = "Get enum values", description = "Get all possible values for dropdown fields")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved enum values")
     public ResponseEntity<Map<String, List<Map<String, String>>>> getEnumValues() {
+        log.info("Retrieving enum values for dropdowns");
         Map<String, List<Map<String, String>>> enums = Map.of(
             "businessLines", businessLineRepository.findAll().stream()
                 .map(bl -> Map.of("value", bl.getCode(), "displayName", bl.getDisplayName()))
@@ -93,6 +103,26 @@ public class ModelController {
                 .map(s -> Map.of("value", s.getCode(), "displayName", s.getDisplayName()))
                 .collect(Collectors.toList())
         );
+        log.info("Successfully retrieved enum values");
         return ResponseEntity.ok(enums);
+    }
+    
+    @PutMapping("/{id}")
+    @Operation(summary = "Update an existing model", description = "Update an existing model with new attributes")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Model successfully updated"),
+        @ApiResponse(responseCode = "404", description = "Model not found"),
+        @ApiResponse(responseCode = "400", description = "Invalid input data")
+    })
+    public ResponseEntity<ModelResponse> updateModel(@PathVariable Long id, @Valid @RequestBody ModelRequest request) {
+        log.info("Updating model with ID: {} to name: {}", id, request.getModelName());
+        try {
+            ModelResponse response = modelService.updateModel(id, request);
+            log.info("Successfully updated model with ID: {}", response.getId());
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            log.error("Failed to update model with ID: {}, error: {}", id, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
     }
 }
