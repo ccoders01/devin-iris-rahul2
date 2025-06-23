@@ -1,3 +1,4 @@
+/* UI fixes applied */
 .container {
   max-width: 1400px;
   margin: 2rem auto;
@@ -12,9 +13,9 @@
   flex-wrap: wrap;
   gap: 1rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
   border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 30px rgba(13, 148, 136, 0.3);
   position: relative;
   overflow: hidden;
 }
@@ -86,21 +87,21 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
   color: white;
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #e879f9 0%, #ef4444 100%);
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
 }
 
 .btn-secondary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
   color: white;
 }
 
 .btn-secondary:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  background: linear-gradient(135deg, #0f766e 0%, #047857 100%);
 }
 
 .alert {
@@ -182,7 +183,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+  background: linear-gradient(90deg, #0d9488, #059669, #06b6d4, #0891b2);
   border-radius: 20px 20px 0 0;
 }
 
@@ -201,7 +202,7 @@
   font-size: 0.875rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #0d9488, #059669);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -222,7 +223,15 @@
 
 .model-id {
   font-weight: 700;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #0d9488, #059669);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all 0.3s ease;
+}
+
+.table-row:hover .model-id {
+  background: linear-gradient(135deg, #0f766e, #047857);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -230,7 +239,7 @@
 
 .model-name {
   font-weight: 700;
-  background: linear-gradient(135deg, #f093fb, #f5576c);
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -247,6 +256,8 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   border: 2px solid rgba(255, 255, 255, 0.3);
   backdrop-filter: blur(10px);
+  white-space: nowrap;
+  display: inline-block;
 }
 
 .risk-high {
