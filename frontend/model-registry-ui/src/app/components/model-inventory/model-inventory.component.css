@@ -223,18 +223,13 @@
 
 .model-id {
   font-weight: 700;
-  background: linear-gradient(135deg, #0d9488, #059669);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #0d9488;
   transition: all 0.3s ease;
 }
 
 .table-row:hover .model-id {
-  background: linear-gradient(135deg, #0f766e, #047857);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #047857;
+  font-weight: 800;
 }
 
 .model-name {
