@@ -26,4 +26,8 @@ export class ModelService {
   getEnumValues(): Observable<EnumValues> {
     return this.http.get<EnumValues>(`${this.apiUrl}/enums`);
   }
+
+  updateModel(id: number, model: ModelRequest): Observable<ModelResponse> {
+    return this.http.put<ModelResponse>(`${this.apiUrl}/${id}`, model);
+  }
 }
