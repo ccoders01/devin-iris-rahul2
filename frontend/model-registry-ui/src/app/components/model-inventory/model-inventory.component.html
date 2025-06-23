@@ -58,8 +58,9 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let model of filteredModels" class="table-row" [formGroup]="editingModelId === model.id ? editForm! : $any(null)">
-          <ng-container *ngIf="editingModelId !== model.id">
+        <ng-container *ngFor="let model of filteredModels">
+          <!-- Normal display row -->
+          <tr *ngIf="editingModelId !== model.id" class="table-row">
             <td class="model-id">{{ model.id }}</td>
             <td class="model-name">{{ model.modelName }}</td>
             <td>{{ model.modelVersion }}</td>
@@ -80,36 +81,37 @@
             <td>
               <button class="btn btn-edit" (click)="startEdit(model)">Edit</button>
             </td>
-          </ng-container>
+          </tr>
 
-          <ng-container *ngIf="editingModelId === model.id && editForm">
+          <!-- Edit form row -->
+          <tr *ngIf="editingModelId === model.id && editForm" class="table-row">
             <td class="model-id">{{ model.id }}</td>
-            <td><input formControlName="modelName" class="edit-input" /></td>
-            <td><input formControlName="modelVersion" class="edit-input" /></td>
-            <td><input formControlName="modelSponsor" class="edit-input" /></td>
+            <td><input [value]="editForm.get('modelName')?.value" (input)="editForm.get('modelName')?.setValue($any($event.target).value)" class="edit-input" /></td>
+            <td><input [value]="editForm.get('modelVersion')?.value" (input)="editForm.get('modelVersion')?.setValue($any($event.target).value)" class="edit-input" /></td>
+            <td><input [value]="editForm.get('modelSponsor')?.value" (input)="editForm.get('modelSponsor')?.setValue($any($event.target).value)" class="edit-input" /></td>
             <td>
-              <select formControlName="businessLine" class="edit-select">
+              <select [value]="editForm.get('businessLine')?.value" (change)="editForm.get('businessLine')?.setValue($any($event.target).value)" class="edit-select">
                 <option *ngFor="let option of enumValues?.businessLines" [value]="option.value">
                   {{ option.displayName }}
                 </option>
               </select>
             </td>
             <td>
-              <select formControlName="modelType" class="edit-select">
+              <select [value]="editForm.get('modelType')?.value" (change)="editForm.get('modelType')?.setValue($any($event.target).value)" class="edit-select">
                 <option *ngFor="let option of enumValues?.modelTypes" [value]="option.value">
                   {{ option.displayName }}
                 </option>
               </select>
             </td>
             <td>
-              <select formControlName="riskRating" class="edit-select">
+              <select [value]="editForm.get('riskRating')?.value" (change)="editForm.get('riskRating')?.setValue($any($event.target).value)" class="edit-select">
                 <option *ngFor="let option of enumValues?.riskRatings" [value]="option.value">
                   {{ option.displayName }}
                 </option>
               </select>
             </td>
             <td>
-              <select formControlName="status" class="edit-select">
+              <select [value]="editForm.get('status')?.value" (change)="editForm.get('status')?.setValue($any($event.target).value)" class="edit-select">
                 <option *ngFor="let option of enumValues?.statuses" [value]="option.value">
                   {{ option.displayName }}
                 </option>
@@ -120,8 +122,8 @@
               <button class="btn btn-save" (click)="saveEdit()">Save</button>
               <button class="btn btn-cancel" (click)="cancelEdit()">Cancel</button>
             </td>
-          </ng-container>
-        </tr>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
   </div>
