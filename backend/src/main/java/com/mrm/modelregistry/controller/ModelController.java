@@ -5,6 +5,7 @@ import com.mrm.modelregistry.dto.ModelResponse;
 import com.mrm.modelregistry.entity.*;
 import com.mrm.modelregistry.repository.*;
 import com.mrm.modelregistry.service.ModelService;
+import com.mrm.modelregistry.service.ModelSearchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -30,6 +31,9 @@ public class ModelController {
     
     @Autowired
     private ModelService modelService;
+    
+    @Autowired
+    private ModelSearchService modelSearchService;
     
     @Autowired
     private BusinessLineRepository businessLineRepository;
@@ -65,17 +69,30 @@ public class ModelController {
     }
     
     @GetMapping
-    @Operation(summary = "Get all models", description = "Retrieve all registered models for inventory display")
-    @ApiResponse(responseCode = "200", description = "Successfully retrieved all models")
-    public ResponseEntity<List<ModelResponse>> getAllModels() {
-        log.info("GET /api/models - Retrieving all models");
-        try {
-            List<ModelResponse> models = modelService.getAllModels();
-            log.info("GET /api/models - Successfully retrieved {} models", models.size());
-            return ResponseEntity.ok(models);
-        } catch (Exception e) {
-            log.error("GET /api/models - Failed to retrieve models, error: {}", e.getMessage(), e);
-            throw e;
+    @Operation(summary = "Get all models or search models", description = "Retrieve all registered models for inventory display or search with optional search term")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved models")
+    public ResponseEntity<List<ModelResponse>> getAllModels(
+            @RequestParam(value = "search", required = false) String searchTerm) {
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            log.info("GET /api/models - Searching models with term: {}", searchTerm);
+            try {
+                List<ModelResponse> models = modelSearchService.searchModels(searchTerm.trim());
+                log.info("GET /api/models - Successfully found {} models for search term: {}", models.size(), searchTerm);
+                return ResponseEntity.ok(models);
+            } catch (Exception e) {
+                log.error("GET /api/models - Failed to search models with term: {}, error: {}", searchTerm, e.getMessage(), e);
+                throw e;
+            }
+        } else {
+            log.info("GET /api/models - Retrieving all models");
+            try {
+                List<ModelResponse> models = modelSearchService.getAllModels();
+                log.info("GET /api/models - Successfully retrieved {} models", models.size());
+                return ResponseEntity.ok(models);
+            } catch (Exception e) {
+                log.error("GET /api/models - Failed to retrieve models, error: {}", e.getMessage(), e);
+                throw e;
+            }
         }
     }
     

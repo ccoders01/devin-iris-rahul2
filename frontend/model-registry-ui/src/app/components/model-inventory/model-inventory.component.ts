@@ -41,7 +41,6 @@ export class ModelInventoryComponent implements OnInit {
       next: (data) => {
         this.models = data;
         this.filteredModels = [...data];
-        this.filterModels();
         this.isLoading = false;
       },
       error: (error) => {
@@ -64,26 +63,25 @@ export class ModelInventoryComponent implements OnInit {
   }
 
   onSearchChange(searchTerm: string): void {
-    this.searchTerm = searchTerm.toLowerCase();
-    this.filterModels();
+    this.searchTerm = searchTerm;
+    this.isLoading = true;
+    
+    this.modelService.getAllModels(searchTerm.trim() || undefined).subscribe({
+      next: (models) => {
+        this.models = models;
+        this.filteredModels = models;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error searching models:', error);
+        this.errorMessage = 'Failed to search models. Please try again.';
+        this.isLoading = false;
+      }
+    });
   }
 
   private filterModels(): void {
-    if (!this.searchTerm) {
-      this.filteredModels = [...this.models];
-      return;
-    }
-
-    this.filteredModels = this.models.filter(model => 
-      model.id.toString().includes(this.searchTerm) ||
-      model.modelName.toLowerCase().includes(this.searchTerm) ||
-      model.modelVersion.toLowerCase().includes(this.searchTerm) ||
-      model.modelSponsor.toLowerCase().includes(this.searchTerm) ||
-      this.getDisplayValue(model.businessLine).toLowerCase().includes(this.searchTerm) ||
-      this.getDisplayValue(model.modelType).toLowerCase().includes(this.searchTerm) ||
-      this.getDisplayValue(model.riskRating).toLowerCase().includes(this.searchTerm) ||
-      this.getDisplayValue(model.status).toLowerCase().includes(this.searchTerm)
-    );
+    this.filteredModels = [...this.models];
   }
 
   startEdit(model: ModelResponse): void {

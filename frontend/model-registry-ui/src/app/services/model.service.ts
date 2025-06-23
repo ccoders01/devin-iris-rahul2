@@ -15,7 +15,10 @@ export class ModelService {
     return this.http.post<ModelResponse>(this.apiUrl, model);
   }
 
-  getAllModels(): Observable<ModelResponse[]> {
+  getAllModels(searchTerm?: string): Observable<ModelResponse[]> {
+    if (searchTerm) {
+      return this.http.get<ModelResponse[]>(`${this.apiUrl}?search=${encodeURIComponent(searchTerm)}`);
+    }
     return this.http.get<ModelResponse[]>(this.apiUrl);
   }
 
