@@ -25,6 +25,7 @@
               }
             ],
             "styles": [
+              "src/assets/bootstrap.css",
               "src/styles.css"
             ]
           },
@@ -85,6 +86,7 @@
               }
             ],
             "styles": [
+              "src/assets/bootstrap.css",
               "src/styles.css"
             ]
           }
