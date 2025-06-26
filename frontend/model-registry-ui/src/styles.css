@@ -1,1 +1,92 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles for Bootstrap Lumen theme integration */
+
+/* Override Bootstrap variables to match our theme */
+:root {
+  --bs-primary: #158cba;
+  --bs-secondary: #f0f0f0;
+  --bs-success: #28b62c;
+  --bs-info: #75caeb;
+  --bs-warning: #ff851b;
+  --bs-danger: #ff4136;
+  --bs-light: #f6f6f6;
+  --bs-dark: #555;
+}
+
+/* Global body styling */
+body {
+  font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  min-height: 100vh;
+}
+
+/* Enhanced Bootstrap button styles */
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--bs-primary) 0%, #0f7a9e 100%);
+  border-color: var(--bs-primary);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #0f7a9e 0%, #0d6b87 100%);
+  border-color: #0f7a9e;
+}
+
+/* Enhanced form controls */
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 2px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.2rem rgba(21, 140, 186, 0.25);
+}
+
+/* Enhanced cards */
+.card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced tables */
+.table {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.table thead th {
+  background: linear-gradient(135deg, var(--bs-primary) 0%, #0f7a9e 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(21, 140, 186, 0.05);
+}
+
+/* Enhanced alerts */
+.alert {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}

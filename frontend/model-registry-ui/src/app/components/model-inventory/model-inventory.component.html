@@ -1,130 +1,145 @@
-<div class="container">
-  <div class="inventory-header">
-    <h2 class="title">Model Inventory</h2>
-    <div class="header-actions">
-      <button class="btn btn-primary" (click)="navigateToRegistration()">
-        Register New Model
-      </button>
-      <button class="btn btn-secondary" (click)="refreshModels()">
-        Refresh
-      </button>
+<div class="container mt-4">
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <h2 class="card-title mb-0">Model Inventory</h2>
+      <div class="d-flex gap-2">
+        <button class="btn btn-light" (click)="navigateToRegistration()">
+          Register New Model
+        </button>
+        <button class="btn btn-outline-light" (click)="refreshModels()">
+          Refresh
+        </button>
+      </div>
     </div>
   </div>
 
-  <div class="search-container">
-    <input
-      type="text"
-      placeholder="Search models by ID, name, version, sponsor, business line, type, risk, or status..."
-      class="search-input"
-      [value]="searchTerm"
-      (input)="onSearchChange($any($event.target).value)"
-    />
+  <div class="card mb-4">
+    <div class="card-body">
+      <input
+        type="text"
+        placeholder="Search models by ID, name, version, sponsor, business line, type, risk, or status..."
+        class="form-control"
+        [value]="searchTerm"
+        (input)="onSearchChange($any($event.target).value)"
+      />
+    </div>
   </div>
 
-  <div *ngIf="errorMessage" class="alert alert-error">
+  <div *ngIf="errorMessage" class="alert alert-danger">
     {{ errorMessage }}
   </div>
 
-  <div *ngIf="isLoading" class="loading-container">
-    <div class="loading-spinner"></div>
-    <p>Loading models...</p>
+  <div *ngIf="isLoading" class="d-flex flex-column align-items-center justify-content-center p-5">
+    <div class="spinner-border text-primary mb-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="text-muted">Loading models...</p>
   </div>
 
-  <div *ngIf="!isLoading && filteredModels.length === 0 && !errorMessage" class="empty-state">
-    <div class="empty-icon">📋</div>
-    <h3 *ngIf="searchTerm">No models found matching "{{ searchTerm }}"</h3>
-    <h3 *ngIf="!searchTerm">No models registered yet</h3>
-    <p *ngIf="searchTerm">Try adjusting your search terms.</p>
-    <p *ngIf="!searchTerm">Get started by registering your first model.</p>
+  <div *ngIf="!isLoading && filteredModels.length === 0 && !errorMessage" class="text-center p-5">
+    <div class="display-1 mb-3">📋</div>
+    <h3 *ngIf="searchTerm" class="text-muted">No models found matching "{{ searchTerm }}"</h3>
+    <h3 *ngIf="!searchTerm" class="text-muted">No models registered yet</h3>
+    <p *ngIf="searchTerm" class="text-muted">Try adjusting your search terms.</p>
+    <p *ngIf="!searchTerm" class="text-muted">Get started by registering your first model.</p>
     <button *ngIf="!searchTerm" class="btn btn-primary" (click)="navigateToRegistration()">
       Register First Model
     </button>
   </div>
 
-  <div *ngIf="!isLoading && filteredModels.length > 0" class="table-container">
-    <table class="models-table">
-      <thead>
-        <tr>
-          <th>Model ID</th>
-          <th>Model Name</th>
-          <th>Version</th>
-          <th>Sponsor</th>
-          <th>Business Line</th>
-          <th>Model Type</th>
-          <th>Risk Rating</th>
-          <th>Status</th>
-          <th>Created At</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <ng-container *ngFor="let model of filteredModels">
-          <!-- Normal display row -->
-          <tr *ngIf="editingModelId !== model.id" class="table-row">
-            <td class="model-id">{{ model.id }}</td>
-            <td class="model-name">{{ model.modelName }}</td>
-            <td>{{ model.modelVersion }}</td>
-            <td>{{ model.modelSponsor }}</td>
-            <td>{{ getDisplayValue(model.businessLine) }}</td>
-            <td>{{ getDisplayValue(model.modelType) }}</td>
-            <td>
-              <span class="risk-badge" [class]="'risk-' + model.riskRating.toLowerCase()">
-                {{ getDisplayValue(model.riskRating) }}
-              </span>
-            </td>
-            <td>
-              <span class="status-badge" [class]="'status-' + model.status.toLowerCase().replace('_', '-')">
-                {{ getDisplayValue(model.status) }}
-              </span>
-            </td>
-            <td class="date-cell">{{ formatDate(model.createdAt) }}</td>
-            <td>
-              <button class="btn btn-edit" (click)="startEdit(model)">Edit</button>
-            </td>
-          </tr>
+  <div *ngIf="!isLoading && filteredModels.length > 0" class="card">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-primary">
+            <tr>
+              <th>Model ID</th>
+              <th>Model Name</th>
+              <th>Version</th>
+              <th>Sponsor</th>
+              <th>Business Line</th>
+              <th>Model Type</th>
+              <th>Risk Rating</th>
+              <th>Status</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let model of filteredModels">
+              <!-- Normal display row -->
+              <tr *ngIf="editingModelId !== model.id">
+                <td class="fw-bold text-primary">{{ model.id }}</td>
+                <td class="fw-bold">{{ model.modelName }}</td>
+                <td>{{ model.modelVersion }}</td>
+                <td>{{ model.modelSponsor }}</td>
+                <td>{{ getDisplayValue(model.businessLine) }}</td>
+                <td>{{ getDisplayValue(model.modelType) }}</td>
+                <td>
+                  <span class="badge" 
+                        [class]="model.riskRating.toLowerCase() === 'high' ? 'bg-danger' : 
+                                model.riskRating.toLowerCase() === 'medium' ? 'bg-warning' : 'bg-success'">
+                    {{ getDisplayValue(model.riskRating) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge"
+                        [class]="model.status.toLowerCase() === 'production' ? 'bg-success' :
+                                model.status.toLowerCase() === 'in_development' ? 'bg-info' :
+                                model.status.toLowerCase() === 'validated' ? 'bg-warning' : 'bg-secondary'">
+                    {{ getDisplayValue(model.status) }}
+                  </span>
+                </td>
+                <td class="text-muted small">{{ formatDate(model.createdAt) }}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary" (click)="startEdit(model)">Edit</button>
+                </td>
+              </tr>
 
-          <!-- Edit form row -->
-          <tr *ngIf="editingModelId === model.id && editForm" class="table-row">
-            <td class="model-id">{{ model.id }}</td>
-            <td><input [value]="editForm.get('modelName')?.value" (input)="editForm.get('modelName')?.setValue($any($event.target).value)" class="edit-input" /></td>
-            <td><input [value]="editForm.get('modelVersion')?.value" (input)="editForm.get('modelVersion')?.setValue($any($event.target).value)" class="edit-input" /></td>
-            <td><input [value]="editForm.get('modelSponsor')?.value" (input)="editForm.get('modelSponsor')?.setValue($any($event.target).value)" class="edit-input" /></td>
-            <td>
-              <select [value]="editForm.get('businessLine')?.value" (change)="editForm.get('businessLine')?.setValue($any($event.target).value)" class="edit-select">
-                <option *ngFor="let option of enumValues?.businessLines" [value]="option.value">
-                  {{ option.displayName }}
-                </option>
-              </select>
-            </td>
-            <td>
-              <select [value]="editForm.get('modelType')?.value" (change)="editForm.get('modelType')?.setValue($any($event.target).value)" class="edit-select">
-                <option *ngFor="let option of enumValues?.modelTypes" [value]="option.value">
-                  {{ option.displayName }}
-                </option>
-              </select>
-            </td>
-            <td>
-              <select [value]="editForm.get('riskRating')?.value" (change)="editForm.get('riskRating')?.setValue($any($event.target).value)" class="edit-select">
-                <option *ngFor="let option of enumValues?.riskRatings" [value]="option.value">
-                  {{ option.displayName }}
-                </option>
-              </select>
-            </td>
-            <td>
-              <select [value]="editForm.get('status')?.value" (change)="editForm.get('status')?.setValue($any($event.target).value)" class="edit-select">
-                <option *ngFor="let option of enumValues?.statuses" [value]="option.value">
-                  {{ option.displayName }}
-                </option>
-              </select>
-            </td>
-            <td class="date-cell">{{ formatDate(model.createdAt) }}</td>
-            <td>
-              <button class="btn btn-save" (click)="saveEdit()">Save</button>
-              <button class="btn btn-cancel" (click)="cancelEdit()">Cancel</button>
-            </td>
-          </tr>
-        </ng-container>
-      </tbody>
-    </table>
+              <!-- Edit form row -->
+              <tr *ngIf="editingModelId === model.id && editForm">
+                <td class="fw-bold text-primary">{{ model.id }}</td>
+                <td><input [value]="editForm.get('modelName')?.value" (input)="editForm.get('modelName')?.setValue($any($event.target).value)" class="form-control form-control-sm" /></td>
+                <td><input [value]="editForm.get('modelVersion')?.value" (input)="editForm.get('modelVersion')?.setValue($any($event.target).value)" class="form-control form-control-sm" /></td>
+                <td><input [value]="editForm.get('modelSponsor')?.value" (input)="editForm.get('modelSponsor')?.setValue($any($event.target).value)" class="form-control form-control-sm" /></td>
+                <td>
+                  <select [value]="editForm.get('businessLine')?.value" (change)="editForm.get('businessLine')?.setValue($any($event.target).value)" class="form-select form-select-sm">
+                    <option *ngFor="let option of enumValues?.businessLines" [value]="option.value">
+                      {{ option.displayName }}
+                    </option>
+                  </select>
+                </td>
+                <td>
+                  <select [value]="editForm.get('modelType')?.value" (change)="editForm.get('modelType')?.setValue($any($event.target).value)" class="form-select form-select-sm">
+                    <option *ngFor="let option of enumValues?.modelTypes" [value]="option.value">
+                      {{ option.displayName }}
+                    </option>
+                  </select>
+                </td>
+                <td>
+                  <select [value]="editForm.get('riskRating')?.value" (change)="editForm.get('riskRating')?.setValue($any($event.target).value)" class="form-select form-select-sm">
+                    <option *ngFor="let option of enumValues?.riskRatings" [value]="option.value">
+                      {{ option.displayName }}
+                    </option>
+                  </select>
+                </td>
+                <td>
+                  <select [value]="editForm.get('status')?.value" (change)="editForm.get('status')?.setValue($any($event.target).value)" class="form-select form-select-sm">
+                    <option *ngFor="let option of enumValues?.statuses" [value]="option.value">
+                      {{ option.displayName }}
+                    </option>
+                  </select>
+                </td>
+                <td class="text-muted small">{{ formatDate(model.createdAt) }}</td>
+                <td>
+                  <button class="btn btn-sm btn-success me-1" (click)="saveEdit()">Save</button>
+                  <button class="btn btn-sm btn-secondary" (click)="cancelEdit()">Cancel</button>
+                </td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
