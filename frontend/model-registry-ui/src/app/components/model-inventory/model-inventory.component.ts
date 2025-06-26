@@ -16,6 +16,8 @@ export class ModelInventoryComponent implements OnInit {
   models: ModelResponse[] = [];
   filteredModels: ModelResponse[] = [];
   searchTerm: string = '';
+  sortBy: string = '';
+  sortDirection: string = 'asc';
   isLoading = true;
   errorMessage = '';
   editingModelId: number | null = null;
@@ -34,10 +36,14 @@ export class ModelInventoryComponent implements OnInit {
   }
 
   loadModels(): void {
+    this.loadModelsWithSorting();
+  }
+  
+  private loadModelsWithSorting(): void {
     this.isLoading = true;
     this.errorMessage = '';
     
-    this.modelService.getAllModels().subscribe({
+    this.modelService.getAllModels(this.searchTerm || undefined, this.sortBy || undefined, this.sortDirection).subscribe({
       next: (data) => {
         this.models = data;
         this.filteredModels = [...data];
@@ -64,20 +70,7 @@ export class ModelInventoryComponent implements OnInit {
 
   onSearchChange(searchTerm: string): void {
     this.searchTerm = searchTerm;
-    this.isLoading = true;
-    
-    this.modelService.getAllModels(searchTerm.trim() || undefined).subscribe({
-      next: (models) => {
-        this.models = models;
-        this.filteredModels = models;
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error searching models:', error);
-        this.errorMessage = 'Failed to search models. Please try again.';
-        this.isLoading = false;
-      }
-    });
+    this.loadModelsWithSorting();
   }
 
   private filterModels(): void {
@@ -100,9 +93,11 @@ export class ModelInventoryComponent implements OnInit {
   saveEdit(): void {
     if (this.editForm?.valid && this.editingModelId) {
       const modelRequest: ModelRequest = this.editForm.value;
+      this.errorMessage = '';
+      
       this.modelService.updateModel(this.editingModelId, modelRequest).subscribe({
         next: (response) => {
-          this.loadModels();
+          this.loadModelsWithSorting();
           this.cancelEdit();
         },
         error: (error) => {
@@ -110,6 +105,8 @@ export class ModelInventoryComponent implements OnInit {
           this.errorMessage = 'Failed to update model. Please try again.';
         }
       });
+    } else {
+      this.errorMessage = 'Please fill in all required fields.';
     }
   }
 
@@ -119,7 +116,7 @@ export class ModelInventoryComponent implements OnInit {
   }
 
   refreshModels(): void {
-    this.loadModels();
+    this.loadModelsWithSorting();
   }
 
   navigateToRegistration(): void {
@@ -133,5 +130,20 @@ export class ModelInventoryComponent implements OnInit {
   formatDate(dateString: string): string {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+  }
+  
+  onSort(column: string): void {
+    if (this.sortBy === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortBy = column;
+      this.sortDirection = 'asc';
+    }
+    this.loadModelsWithSorting();
+  }
+  
+  getSortIcon(column: string): string {
+    if (this.sortBy !== column) return '↕️';
+    return this.sortDirection === 'asc' ? '↑' : '↓';
   }
 }
