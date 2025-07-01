@@ -133,6 +133,31 @@ class BenchAnalyticsProcessor:
             'Green', 'Amber', 'Red'
         ], num_rows, p=[0.7, 0.2, 0.1])
         
+        start_date = pd.Timestamp.now() - pd.DateOffset(years=5)
+        end_date = pd.Timestamp.now()
+        date_range = pd.date_range(start=start_date, end=end_date, freq='D')
+        sample_data['Date of Joining'] = np.random.choice(date_range, size=num_rows)
+        
+        clients = ['Acme Corp', 'TechFlow Inc', 'DataSys Ltd', 'CloudTech', 'InnovateCo', 
+                  'GlobalSoft', 'NextGen Solutions', 'DigitalEdge', 'SmartSystems', 'FutureTech']
+        projects = ['Digital Transformation', 'Cloud Migration', 'Data Analytics Platform', 
+                   'Mobile App Development', 'AI/ML Platform', 'E-commerce Portal', 
+                   'CRM System', 'ERP Implementation', 'DevOps Automation', 'Cybersecurity Enhancement']
+        
+        sample_data['Client Name'] = ['' for _ in range(num_rows)]
+        sample_data['Project Name'] = ['' for _ in range(num_rows)]
+        
+        allocated_mask = np.array(sample_data['Status']) == 'Allocated'
+        if allocated_mask.sum() > 0:
+            sample_data['Client Name'] = [
+                np.random.choice(clients) if allocated_mask[i] else ''
+                for i in range(num_rows)
+            ]
+            sample_data['Project Name'] = [
+                np.random.choice(projects) if allocated_mask[i] else ''
+                for i in range(num_rows)
+            ]
+        
         for col in self.column_categories['employee_info'] + \
                    self.column_categories['location_info'] + \
                    self.column_categories['project_allocation'] + \

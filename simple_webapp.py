@@ -236,5 +236,70 @@ def data_preview():
         'total_rows': len(current_data)
     })
 
+@app.route('/drill_down')
+def drill_down():
+    global current_data
+    
+    if current_data is None:
+        return jsonify({'error': 'No data available'}), 400
+    
+    chart_id = request.args.get('chart_id')
+    filter_value = request.args.get('filter_value')
+    additional_filter = request.args.get('additional_filter')  # For stacked charts
+    
+    chart_column_map = {
+        'status_chart': 'Status',
+        'location_chart': 'Location', 
+        'gender_chart': 'Gender',
+        'level_chart': 'Level',
+        'bench_category_chart': 'Bench Category',
+        'skills_chart': 'Tech1 Primary Skill',
+        'rag_chart': 'Associate RAG Status'
+    }
+    
+    try:
+        df = current_data.copy()
+        
+        if chart_id == 'experience_chart':
+            exp_value = float(filter_value)
+            df = df[(df['Total Experience'] >= exp_value-0.5) & (df['Total Experience'] < exp_value+0.5)]
+        elif chart_id == 'bench_ageing_chart':
+            if filter_value == '0-2 weeks':
+                df = df[df['Current Ageing'] <= 14]
+            elif filter_value == '2-4 weeks':
+                df = df[(df['Current Ageing'] > 14) & (df['Current Ageing'] <= 28)]
+            elif filter_value == '4-8 weeks':
+                df = df[(df['Current Ageing'] > 28) & (df['Current Ageing'] <= 56)]
+            elif filter_value == '8+ weeks':
+                df = df[df['Current Ageing'] > 56]
+        elif chart_id == 'location_status_chart':
+            df = df[df['Location'] == filter_value]
+            if additional_filter:
+                df = df[df['Status'] == additional_filter]
+        else:
+            column = chart_column_map.get(chart_id)
+            if column and column in df.columns:
+                df = df[df[column] == filter_value]
+        
+        display_columns = ['Employee Name', 'Designation', 'Employment Status', 
+                         'Date of Joining', 'Status', 'Client Name', 'Project Name']
+        available_columns = [col for col in display_columns if col in df.columns]
+        result_df = df[available_columns]
+        
+        return jsonify({
+            'success': True,
+            'data': result_df.to_dict('records'),
+            'columns': available_columns,
+            'total_count': len(result_df),
+            'filter_info': {
+                'chart_id': chart_id,
+                'filter_value': filter_value,
+                'additional_filter': additional_filter
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Drill-down failed: {str(e)}'}), 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8050, debug=True)

@@ -266,7 +266,15 @@
                     chartDiv.id = chart.id;
                     container.appendChild(chartDiv);
 
-                    Plotly.newPlot(chart.id, chart.data.data, chart.data.layout, {responsive: true});
+                    Plotly.newPlot(chart.id, chart.data.data, chart.data.layout, {responsive: true}).then(function() {
+                        // Add click event listener after plot is created
+                        const plotElement = document.getElementById(chart.id);
+                        plotElement.on('plotly_click', function(data) {
+                            if (data.points && data.points.length > 0) {
+                                handleChartClick(chart.id, data.points[0]);
+                            }
+                        });
+                    });
                 });
             })
             .catch(error => {
@@ -350,6 +358,140 @@
                 loadCharts(tabName);
             }
         }
+
+        function handleChartClick(chartId, point) {
+            let filterValue, additionalFilter;
+            
+            // Determine filter value based on chart type
+            if (chartId.includes('_chart')) {
+                if (point.label !== undefined) {
+                    // Pie charts use point.label
+                    filterValue = point.label;
+                } else if (point.x !== undefined) {
+                    // Bar charts use point.x
+                    filterValue = point.x;
+                    // For stacked bar charts, also get the series name
+                    if (chartId === 'location_status_chart' && point.data && point.data.name) {
+                        additionalFilter = point.data.name;
+                    }
+                }
+            }
+            
+            if (filterValue) {
+                showDrillDownModal(chartId, filterValue, additionalFilter);
+            }
+        }
+        
+        function showDrillDownModal(chartId, filterValue, additionalFilter) {
+            // Show modal with loading state
+            const modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
+            const modalTitle = document.getElementById('drillDownModalLabel');
+            const modalContent = document.getElementById('drillDownContent');
+            
+            // Set title based on filter
+            let title = `Employees: ${filterValue}`;
+            if (additionalFilter) {
+                title += ` (${additionalFilter})`;
+            }
+            modalTitle.textContent = title;
+            
+            // Show loading spinner
+            modalContent.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+            
+            modal.show();
+            
+            // Fetch drill-down data
+            const params = new URLSearchParams({
+                chart_id: chartId,
+                filter_value: filterValue
+            });
+            if (additionalFilter) {
+                params.append('additional_filter', additionalFilter);
+            }
+            
+            fetch(window.location.origin + `/drill_down?${params}`, {
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderEmployeeGrid(data.data, data.columns, modalContent);
+                    } else {
+                        modalContent.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                    }
+                })
+                .catch(error => {
+                    modalContent.innerHTML = `<div class="alert alert-danger">Failed to load data: ${error.message}</div>`;
+                });
+        }
+        
+        function renderEmployeeGrid(employees, columns, container) {
+            if (employees.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No employees found for this filter.</div>';
+                return;
+            }
+            
+            let tableHtml = `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                ${columns.map(col => `<th>${col}</th>`).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            employees.forEach(employee => {
+                tableHtml += '<tr>';
+                columns.forEach(col => {
+                    const value = employee[col] || '';
+                    tableHtml += `<td>${value}</td>`;
+                });
+                tableHtml += '</tr>';
+            });
+            
+            tableHtml += `
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">Showing ${employees.length} employees</small>
+                </div>
+            `;
+            
+            container.innerHTML = tableHtml;
+        }
     </script>
+
+    <!-- Drill-Down Modal -->
+    <div class="modal fade" id="drillDownModal" tabindex="-1" aria-labelledby="drillDownModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="drillDownModalLabel">Employee Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="drillDownContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
