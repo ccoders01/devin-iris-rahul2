@@ -14,6 +14,18 @@ import io
 import base64
 from data_processor import BenchAnalyticsProcessor
 
+def filter_by_categories(df, selected_categories):
+    """Filter dataframe by selected categories. If no categories selected, return all data."""
+    if not selected_categories or len(selected_categories) == 0:
+        return df
+    
+    filtered_df = df[df['Status'].isin(selected_categories)]
+    
+    if len(filtered_df) == 0:
+        return df
+    
+    return filtered_df
+
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
@@ -102,36 +114,41 @@ def get_analytics(chart_type):
     if processor is None or current_data is None:
         return jsonify({'error': 'No data available. Please upload a file or generate sample data.'}), 400
     
+    categories_param = request.args.get('categories', '')
+    selected_categories = categories_param.split(',') if categories_param else []
+    
     try:
         if chart_type == 'overview':
-            return get_overview_charts()
+            return get_overview_charts(selected_categories)
         elif chart_type == 'demographics':
-            return get_demographics_charts()
+            return get_demographics_charts(selected_categories)
         elif chart_type == 'bench':
-            return get_bench_charts()
+            return get_bench_charts(selected_categories)
         elif chart_type == 'skills':
-            return get_skills_charts()
+            return get_skills_charts(selected_categories)
         elif chart_type == 'locations':
-            return get_locations_charts()
+            return get_locations_charts(selected_categories)
         else:
             return jsonify({'error': 'Invalid chart type'}), 400
             
     except Exception as e:
         return jsonify({'error': f'Failed to generate {chart_type} analytics: {str(e)}'}), 500
 
-def get_overview_charts():
+def get_overview_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
-    df = current_data
+    df = filter_by_categories(current_data, selected_categories)
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
     status_counts = df['Status'].value_counts()
     fig1 = go.Figure(data=[go.Pie(labels=status_counts.index.tolist(), values=status_counts.values.tolist())])
-    fig1.update_layout(title="Employee Status Distribution", height=400)
+    fig1.update_layout(title=f"Employee Status Distribution {category_text}", height=400)
     
     location_counts = df['Location'].value_counts().head(10)
     fig2 = go.Figure(data=[go.Bar(x=location_counts.index.tolist(), y=location_counts.values.tolist())])
-    fig2.update_layout(title="Top 10 Locations", height=400)
+    fig2.update_layout(title=f"Top 10 Locations {category_text}", height=400)
     
     return jsonify({
         'charts': [
@@ -140,25 +157,27 @@ def get_overview_charts():
         ]
     })
 
-def get_demographics_charts():
+def get_demographics_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
-    df = current_data[current_data['Status'] == 'Bench']
+    df = filter_by_categories(current_data, selected_categories)
     
     if len(df) == 0:
-        return jsonify({'message': 'No bench employees found in the data'})
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
     gender_counts = df['Gender'].value_counts()
     fig1 = go.Figure(data=[go.Pie(labels=gender_counts.index.tolist(), values=gender_counts.values.tolist())])
-    fig1.update_layout(title="Gender Distribution (Bench Only)", height=400)
+    fig1.update_layout(title=f"Gender Distribution {category_text}", height=400)
     
     level_counts = df['Level'].value_counts()
     fig2 = go.Figure(data=[go.Bar(x=level_counts.index.tolist(), y=level_counts.values.tolist())])
-    fig2.update_layout(title="Employee Level Distribution (Bench Only)", height=400)
+    fig2.update_layout(title=f"Employee Level Distribution {category_text}", height=400)
     
     fig3 = go.Figure(data=[go.Histogram(x=df['Total Experience'], nbinsx=20)])
-    fig3.update_layout(title="Experience Distribution (Bench Only)", height=400)
+    fig3.update_layout(title=f"Experience Distribution {category_text}", height=400)
     
     return jsonify({
         'charts': [
@@ -168,29 +187,37 @@ def get_demographics_charts():
         ]
     })
 
-def get_bench_charts():
+def get_bench_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
-    df = current_data
-    bench_df = df[df['Status'] == 'Bench']
+    df = filter_by_categories(current_data, selected_categories)
     
-    if len(bench_df) == 0:
-        return jsonify({'message': 'No bench employees found in the data'})
+    if len(df) == 0:
+        return jsonify({'message': 'No employees found for the selected categories'})
     
-    category_counts = bench_df['Bench Category'].value_counts()
-    fig1 = go.Figure(data=[go.Pie(labels=category_counts.index.tolist(), values=category_counts.values.tolist())])
-    fig1.update_layout(title="Bench Category Distribution", height=400)
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    ageing_ranges = {
-        '0-2 weeks': len(bench_df[bench_df['Current Ageing'] <= 14]),
-        '2-4 weeks': len(bench_df[(bench_df['Current Ageing'] > 14) & (bench_df['Current Ageing'] <= 28)]),
-        '4-8 weeks': len(bench_df[(bench_df['Current Ageing'] > 28) & (bench_df['Current Ageing'] <= 56)]),
-        '8+ weeks': len(bench_df[bench_df['Current Ageing'] > 56])
-    }
+    if 'Bench Category' in df.columns:
+        category_counts = df['Bench Category'].value_counts()
+        fig1 = go.Figure(data=[go.Pie(labels=category_counts.index.tolist(), values=category_counts.values.tolist())])
+        fig1.update_layout(title=f"Bench Category Distribution {category_text}", height=400)
+    else:
+        fig1 = go.Figure()
+        fig1.update_layout(title=f"Bench Category Distribution - No Data Available {category_text}", height=400)
     
-    fig2 = go.Figure(data=[go.Bar(x=list(ageing_ranges.keys()), y=list(ageing_ranges.values()))])
-    fig2.update_layout(title="Bench Ageing Distribution", height=400)
+    if 'Current Ageing' in df.columns:
+        ageing_ranges = {
+            '0-2 weeks': len(df[df['Current Ageing'] <= 14]),
+            '2-4 weeks': len(df[(df['Current Ageing'] > 14) & (df['Current Ageing'] <= 28)]),
+            '4-8 weeks': len(df[(df['Current Ageing'] > 28) & (df['Current Ageing'] <= 56)]),
+            '8+ weeks': len(df[df['Current Ageing'] > 56])
+        }
+        fig2 = go.Figure(data=[go.Bar(x=list(ageing_ranges.keys()), y=list(ageing_ranges.values()))])
+        fig2.update_layout(title=f"Bench Ageing Distribution {category_text}", height=400)
+    else:
+        fig2 = go.Figure()
+        fig2.update_layout(title=f"Bench Ageing Distribution - No Data Available {category_text}", height=400)
     
     return jsonify({
         'charts': [
@@ -199,23 +226,25 @@ def get_bench_charts():
         ]
     })
 
-def get_skills_charts():
+def get_skills_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
-    df = current_data[current_data['Status'] == 'Bench']
+    df = filter_by_categories(current_data, selected_categories)
     
     if len(df) == 0:
-        return jsonify({'message': 'No bench employees found in the data'})
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
     skill_counts = df['Tech1 Primary Skill'].value_counts().head(15)
     fig1 = go.Figure(data=[go.Bar(x=skill_counts.index.tolist(), y=skill_counts.values.tolist())])
-    fig1.update_layout(title="Top 15 Primary Skills (Bench Only)", height=400)
+    fig1.update_layout(title=f"Top 15 Primary Skills {category_text}", height=400)
     
     rag_counts = df['Associate RAG Status'].value_counts()
     colors = {'Green': 'green', 'Amber': 'orange', 'Red': 'red'}
     fig2 = go.Figure(data=[go.Pie(labels=rag_counts.index.tolist(), values=rag_counts.values.tolist())])
-    fig2.update_layout(title="RAG Status Distribution (Bench Only)", height=400)
+    fig2.update_layout(title=f"Associate RAG Status Distribution {category_text}", height=400)
     
     return jsonify({
         'charts': [
@@ -224,18 +253,20 @@ def get_skills_charts():
         ]
     })
 
-def get_locations_charts():
+def get_locations_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
-    df = current_data[current_data['Status'] == 'Bench']
+    df = filter_by_categories(current_data, selected_categories)
     
     if len(df) == 0:
-        return jsonify({'message': 'No bench employees found in the data'})
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
     location_counts = df['Location'].value_counts().head(10)
     fig = go.Figure(data=[go.Bar(x=location_counts.index.tolist(), y=location_counts.values.tolist())])
-    fig.update_layout(title="Location Distribution (Bench Only)", height=400)
+    fig.update_layout(title=f"Top 10 Locations {category_text}", height=400)
     
     return jsonify({
         'charts': [
@@ -250,21 +281,24 @@ def data_preview():
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
     
-    bench_data = current_data[current_data['Status'] == 'Bench']
+    categories_param = request.args.get('categories', '')
+    selected_categories = categories_param.split(',') if categories_param else []
     
-    if len(bench_data) == 0:
-        return jsonify({'message': 'No bench employees found in the data'})
+    df = filter_by_categories(current_data, selected_categories)
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No employees found for the selected categories'})
     
     display_columns = ['Employee Code', 'Employee Name', 'Gender', 'Level', 
                       'Location', 'Status', 'Tech1 Primary Skill', 'Total Experience']
     
-    available_columns = [col for col in display_columns if col in bench_data.columns]
-    preview_data = bench_data[available_columns].head(100)
+    available_columns = [col for col in display_columns if col in df.columns]
+    preview_data = df[available_columns].head(100)
     
     return jsonify({
         'columns': available_columns,
         'data': preview_data.to_dict('records'),
-        'total_rows': len(bench_data)
+        'total_rows': len(df)
     })
 
 @app.route('/drill_down')
@@ -297,7 +331,9 @@ def drill_down():
     }
     
     try:
-        df = current_data.copy()
+        categories_param = request.args.get('categories', '')
+        selected_categories = categories_param.split(',') if categories_param else []
+        df = filter_by_categories(current_data, selected_categories)
         
         if chart_id == 'experience_chart':
             exp_value = float(filter_value)
