@@ -147,20 +147,16 @@ def get_overview_charts(selected_categories=None):
         
         if len(designation_df) > 0:
             designation_counts = designation_df['Designation'].value_counts()
-            fig = go.Figure(data=[go.Pie(labels=designation_counts.index.tolist(), values=designation_counts.values.tolist(),
-                                        marker=dict(colors=['#667eea', '#4c63d2', '#8fa4f3', '#3b4cb8', '#5a6fd8', '#7b88f0', '#9ba8f5']))])
-            fig.update_layout(title=f"Designation Distribution {category_text}", height=500,
-                             title_font=dict(color='#3b4cb8', size=16))
+            fig = go.Figure(data=[go.Pie(labels=designation_counts.index.tolist(), values=designation_counts.values.tolist())])
+            fig.update_layout(title=f"Designation Distribution {category_text}", height=500)
         else:
             fig = go.Figure()
-            fig.update_layout(title=f"Designation Distribution - No Designation Data Available {category_text}", height=500,
-                             title_font=dict(color='#3b4cb8', size=16))
+            fig.update_layout(title=f"Designation Distribution - No Designation Data Available {category_text}", height=500)
             fig.add_annotation(text="No designation assignments found for selected categories", 
                              xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
     else:
         fig = go.Figure()
-        fig.update_layout(title=f"Designation Distribution - Designation Column Not Found {category_text}", height=500,
-                         title_font=dict(color='#3b4cb8', size=16))
+        fig.update_layout(title=f"Designation Distribution - Designation Column Not Found {category_text}", height=500)
         fig.add_annotation(text="Designation column not available in data", 
                          xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
     
@@ -182,21 +178,15 @@ def get_demographics_charts(selected_categories=None):
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
     gender_counts = df['Gender'].value_counts()
-    fig1 = go.Figure(data=[go.Pie(labels=gender_counts.index.tolist(), values=gender_counts.values.tolist(),
-                                 marker=dict(colors=['#667eea', '#8fa4f3', '#4c63d2']))])
-    fig1.update_layout(title=f"Gender Distribution {category_text}", height=400,
-                      title_font=dict(color='#3b4cb8', size=14))
+    fig1 = go.Figure(data=[go.Pie(labels=gender_counts.index.tolist(), values=gender_counts.values.tolist())])
+    fig1.update_layout(title=f"Gender Distribution {category_text}", height=400)
     
     level_counts = df['Level'].value_counts()
-    fig2 = go.Figure(data=[go.Bar(x=level_counts.index.tolist(), y=level_counts.values.tolist(),
-                                 marker=dict(color='#667eea'))])
-    fig2.update_layout(title=f"Employee Level Distribution {category_text}", height=400,
-                      title_font=dict(color='#3b4cb8', size=14))
+    fig2 = go.Figure(data=[go.Bar(x=level_counts.index.tolist(), y=level_counts.values.tolist())])
+    fig2.update_layout(title=f"Employee Level Distribution {category_text}", height=400)
     
-    fig3 = go.Figure(data=[go.Histogram(x=df['Total Experience'], nbinsx=20,
-                                       marker=dict(color='#8fa4f3', line=dict(color='#4c63d2', width=1)))])
-    fig3.update_layout(title=f"Experience Distribution {category_text}", height=400,
-                      title_font=dict(color='#3b4cb8', size=14))
+    fig3 = go.Figure(data=[go.Histogram(x=df['Total Experience'], nbinsx=20)])
+    fig3.update_layout(title=f"Experience Distribution {category_text}", height=400)
     
     return jsonify({
         'charts': [
@@ -219,14 +209,11 @@ def get_bench_charts(selected_categories=None):
     
     if 'Bench Category' in df.columns:
         category_counts = df['Bench Category'].value_counts()
-        fig1 = go.Figure(data=[go.Pie(labels=category_counts.index.tolist(), values=category_counts.values.tolist(),
-                                     marker=dict(colors=['#667eea', '#4c63d2', '#8fa4f3', '#3b4cb8', '#5a6fd8']))])
-        fig1.update_layout(title=f"Bench Category Distribution {category_text}", height=400,
-                          title_font=dict(color='#3b4cb8', size=14))
+        fig1 = go.Figure(data=[go.Pie(labels=category_counts.index.tolist(), values=category_counts.values.tolist())])
+        fig1.update_layout(title=f"Bench Category Distribution {category_text}", height=400)
     else:
         fig1 = go.Figure()
-        fig1.update_layout(title=f"Bench Category Distribution - No Data Available {category_text}", height=400,
-                          title_font=dict(color='#3b4cb8', size=14))
+        fig1.update_layout(title=f"Bench Category Distribution - No Data Available {category_text}", height=400)
     
     if 'Current Ageing' in df.columns:
         ageing_ranges = {
@@ -235,14 +222,11 @@ def get_bench_charts(selected_categories=None):
             '4-8 weeks': len(df[(df['Current Ageing'] > 28) & (df['Current Ageing'] <= 56)]),
             '8+ weeks': len(df[df['Current Ageing'] > 56])
         }
-        fig2 = go.Figure(data=[go.Bar(x=list(ageing_ranges.keys()), y=list(ageing_ranges.values()),
-                                     marker=dict(color=['#8fa4f3', '#667eea', '#4c63d2', '#3b4cb8']))])
-        fig2.update_layout(title=f"Bench Ageing Distribution {category_text}", height=400,
-                          title_font=dict(color='#3b4cb8', size=14))
+        fig2 = go.Figure(data=[go.Bar(x=list(ageing_ranges.keys()), y=list(ageing_ranges.values()))])
+        fig2.update_layout(title=f"Bench Ageing Distribution {category_text}", height=400)
     else:
         fig2 = go.Figure()
-        fig2.update_layout(title=f"Bench Ageing Distribution - No Data Available {category_text}", height=400,
-                          title_font=dict(color='#3b4cb8', size=14))
+        fig2.update_layout(title=f"Bench Ageing Distribution - No Data Available {category_text}", height=400)
     
     return jsonify({
         'charts': [
@@ -263,17 +247,13 @@ def get_skills_charts(selected_categories=None):
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
     skill_counts = df['Tech1 Primary Skill'].value_counts().head(15)
-    fig1 = go.Figure(data=[go.Bar(x=skill_counts.index.tolist(), y=skill_counts.values.tolist(),
-                                 marker=dict(color='#667eea'))])
-    fig1.update_layout(title=f"Top 15 Primary Skills {category_text}", height=400,
-                      title_font=dict(color='#3b4cb8', size=14))
+    fig1 = go.Figure(data=[go.Bar(x=skill_counts.index.tolist(), y=skill_counts.values.tolist())])
+    fig1.update_layout(title=f"Top 15 Primary Skills {category_text}", height=400)
     
     rag_counts = df['Associate RAG Status'].value_counts()
     colors = {'Green': 'green', 'Amber': 'orange', 'Red': 'red'}
-    fig2 = go.Figure(data=[go.Pie(labels=rag_counts.index.tolist(), values=rag_counts.values.tolist(),
-                                 marker=dict(colors=['#28a745', '#ffc107', '#dc3545']))])
-    fig2.update_layout(title=f"Associate RAG Status Distribution {category_text}", height=400,
-                      title_font=dict(color='#3b4cb8', size=14))
+    fig2 = go.Figure(data=[go.Pie(labels=rag_counts.index.tolist(), values=rag_counts.values.tolist())])
+    fig2.update_layout(title=f"Associate RAG Status Distribution {category_text}", height=400)
     
     return jsonify({
         'charts': [
@@ -294,10 +274,8 @@ def get_locations_charts(selected_categories=None):
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
     region_counts = df['Location'].value_counts().head(10)
-    fig = go.Figure(data=[go.Bar(x=region_counts.index.tolist(), y=region_counts.values.tolist(),
-                                marker=dict(color='#667eea'))])
-    fig.update_layout(title=f"Top 10 Regions {category_text}", height=400,
-                     title_font=dict(color='#3b4cb8', size=14))
+    fig = go.Figure(data=[go.Bar(x=region_counts.index.tolist(), y=region_counts.values.tolist())])
+    fig.update_layout(title=f"Top 10 Regions {category_text}", height=400)
     
     return jsonify({
         'charts': [
