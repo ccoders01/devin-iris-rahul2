@@ -29,7 +29,7 @@ def filter_by_categories(df, selected_categories):
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-EXCEL_FILE_PATH = '/home/ubuntu/attachments/2e4b24c0-00f2-4392-a340-6f6a825b2663/Test_Bench+capacity+Jun+24.xlsx'
+EXCEL_FILE_PATH = '/home/ubuntu/attachments/12b1bb37-764b-4db6-8704-1c4922cc604a/Original_Bench+capacity+Jun+24.xlsx'
 processor = None
 current_data = None
 
@@ -142,27 +142,27 @@ def get_overview_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    if 'Client Name' in df.columns:
-        client_df = df[df['Client Name'].notna() & (df['Client Name'] != '') & (df['Client Name'] != 'N/A')]
+    if 'Designation' in df.columns:
+        designation_df = df[df['Designation'].notna() & (df['Designation'] != '') & (df['Designation'] != 'N/A')]
         
-        if len(client_df) > 0:
-            client_counts = client_df['Client Name'].value_counts()
-            fig = go.Figure(data=[go.Pie(labels=client_counts.index.tolist(), values=client_counts.values.tolist())])
-            fig.update_layout(title=f"Client Distribution {category_text}", height=500)
+        if len(designation_df) > 0:
+            designation_counts = designation_df['Designation'].value_counts()
+            fig = go.Figure(data=[go.Pie(labels=designation_counts.index.tolist(), values=designation_counts.values.tolist())])
+            fig.update_layout(title=f"Designation Distribution {category_text}", height=500)
         else:
             fig = go.Figure()
-            fig.update_layout(title=f"Client Distribution - No Client Data Available {category_text}", height=500)
-            fig.add_annotation(text="No client assignments found for selected categories", 
+            fig.update_layout(title=f"Designation Distribution - No Designation Data Available {category_text}", height=500)
+            fig.add_annotation(text="No designation assignments found for selected categories", 
                              xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
     else:
         fig = go.Figure()
-        fig.update_layout(title=f"Client Distribution - Client Name Column Not Found {category_text}", height=500)
-        fig.add_annotation(text="Client Name column not available in data", 
+        fig.update_layout(title=f"Designation Distribution - Designation Column Not Found {category_text}", height=500)
+        fig.add_annotation(text="Designation column not available in data", 
                          xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
     
     return jsonify({
         'charts': [
-            {'id': 'client_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+            {'id': 'designation_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
         ]
     })
 
@@ -273,13 +273,13 @@ def get_locations_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    location_counts = df['Location'].value_counts().head(10)
-    fig = go.Figure(data=[go.Bar(x=location_counts.index.tolist(), y=location_counts.values.tolist())])
-    fig.update_layout(title=f"Top 10 Locations {category_text}", height=400)
+    region_counts = df['Location'].value_counts().head(10)
+    fig = go.Figure(data=[go.Bar(x=region_counts.index.tolist(), y=region_counts.values.tolist())])
+    fig.update_layout(title=f"Top 10 Regions {category_text}", height=400)
     
     return jsonify({
         'charts': [
-            {'id': 'location_bench_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+            {'id': 'region_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
         ]
     })
 
@@ -331,13 +331,14 @@ def drill_down():
     
     chart_column_map = {
         'status_chart': 'Status',
-        'location_chart': 'Location', 
+        'location_chart': 'Location',
+        'region_chart': 'Location', 
         'gender_chart': 'Gender',
         'level_chart': 'Level',
         'bench_category_chart': 'Bench Category',
         'skills_chart': 'Tech1 Primary Skill',
         'rag_chart': 'Associate RAG Status',
-        'client_chart': 'Client Name'
+        'designation_chart': 'Designation'
     }
     
     try:
