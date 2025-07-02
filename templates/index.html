@@ -480,13 +480,14 @@
             
             const employees = data.data;
             const columns = data.columns;
-            gridConfig.allColumns = columns;
+            const availableColumns = data.available_columns || columns;
+            gridConfig.allColumns = availableColumns;
             
             // Load saved preferences
             loadGridPreferences();
             
             // Setup column visibility controls
-            setupColumnControls(columns);
+            setupColumnControls(availableColumns);
             
             // Render the grid
             renderGridTable(employees, columns, container);

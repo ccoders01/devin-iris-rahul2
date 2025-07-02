@@ -291,8 +291,17 @@ def drill_down():
         
         display_columns = ['Employee Name', 'Designation', 'Employment Status', 
                          'Date of Joining', 'Status', 'Client Name', 'Project Name']
-        available_columns = [col for col in display_columns if col in df.columns]
-        result_df = df[available_columns]
+        
+        all_available_columns = display_columns + ['ATL Eligible', 'Resignation Status', 'Potential ATL']
+        available_columns = [col for col in all_available_columns if col in df.columns]
+        
+        if visible_columns:
+            visible_columns = [col for col in visible_columns if col in available_columns]
+            result_df = df[visible_columns] if visible_columns else df[display_columns]
+        else:
+            default_visible = [col for col in display_columns if col in df.columns]
+            result_df = df[default_visible]
+            visible_columns = default_visible
         
         if search_term:
             search_mask = result_df.astype(str).apply(
@@ -304,11 +313,6 @@ def drill_down():
             ascending = sort_direction.lower() == 'asc'
             result_df = result_df.sort_values(by=sort_column, ascending=ascending)
         
-        if visible_columns:
-            visible_columns = [col for col in visible_columns if col in available_columns]
-            if visible_columns:
-                available_columns = visible_columns
-                result_df = result_df[available_columns]
         
         if export_format in ['csv', 'excel']:
             if export_format == 'csv':
@@ -339,7 +343,8 @@ def drill_down():
         return jsonify({
             'success': True,
             'data': paginated_df.to_dict('records'),
-            'columns': available_columns,
+            'columns': visible_columns,
+            'available_columns': available_columns,
             'total_count': total_count,
             'page': page,
             'page_size': page_size,

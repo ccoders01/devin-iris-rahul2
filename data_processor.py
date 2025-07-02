@@ -45,7 +45,7 @@ class BenchAnalyticsProcessor:
             'performance_metrics': [
                 'Associate RAG Status', 'SME Evaluation', 'Evaluation Tool',
                 'No Of Evaluation', 'Last Evaluation Reason', 'ATL Eligible',
-                'Associate Classification'
+                'Associate Classification', 'Potential ATL'
             ],
             'hr_admin': [
                 'HRBP', 'BGV Status', 'BGV Closure Status', 'Expected BGV Closure Date',
@@ -132,6 +132,18 @@ class BenchAnalyticsProcessor:
         sample_data['Associate RAG Status'] = np.random.choice([
             'Green', 'Amber', 'Red'
         ], num_rows, p=[0.7, 0.2, 0.1])
+        
+        sample_data['ATL Eligible'] = np.random.choice([
+            'Yes', 'No', 'Under Review'
+        ], num_rows, p=[0.3, 0.6, 0.1])
+        
+        sample_data['Resignation Status'] = np.random.choice([
+            '', 'Submitted', 'Approved', 'Withdrawn'
+        ], num_rows, p=[0.85, 0.08, 0.05, 0.02])
+        
+        sample_data['Potential ATL'] = np.random.choice([
+            'High', 'Medium', 'Low', ''
+        ], num_rows, p=[0.15, 0.25, 0.35, 0.25])
         
         start_date = pd.Timestamp.now() - pd.DateOffset(years=5)
         end_date = pd.Timestamp.now()
