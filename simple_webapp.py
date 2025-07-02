@@ -144,18 +144,21 @@ def get_demographics_charts():
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
-    df = current_data
+    df = current_data[current_data['Status'] == 'Bench']
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No bench employees found in the data'})
     
     gender_counts = df['Gender'].value_counts()
     fig1 = go.Figure(data=[go.Pie(labels=gender_counts.index.tolist(), values=gender_counts.values.tolist())])
-    fig1.update_layout(title="Gender Distribution", height=400)
+    fig1.update_layout(title="Gender Distribution (Bench Only)", height=400)
     
     level_counts = df['Level'].value_counts()
     fig2 = go.Figure(data=[go.Bar(x=level_counts.index.tolist(), y=level_counts.values.tolist())])
-    fig2.update_layout(title="Employee Level Distribution", height=400)
+    fig2.update_layout(title="Employee Level Distribution (Bench Only)", height=400)
     
     fig3 = go.Figure(data=[go.Histogram(x=df['Total Experience'], nbinsx=20)])
-    fig3.update_layout(title="Experience Distribution", height=400)
+    fig3.update_layout(title="Experience Distribution (Bench Only)", height=400)
     
     return jsonify({
         'charts': [
@@ -200,16 +203,19 @@ def get_skills_charts():
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
-    df = current_data
+    df = current_data[current_data['Status'] == 'Bench']
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No bench employees found in the data'})
     
     skill_counts = df['Tech1 Primary Skill'].value_counts().head(15)
     fig1 = go.Figure(data=[go.Bar(x=skill_counts.index.tolist(), y=skill_counts.values.tolist())])
-    fig1.update_layout(title="Top 15 Primary Skills", height=400)
+    fig1.update_layout(title="Top 15 Primary Skills (Bench Only)", height=400)
     
     rag_counts = df['Associate RAG Status'].value_counts()
     colors = {'Green': 'green', 'Amber': 'orange', 'Red': 'red'}
     fig2 = go.Figure(data=[go.Pie(labels=rag_counts.index.tolist(), values=rag_counts.values.tolist())])
-    fig2.update_layout(title="RAG Status Distribution", height=400)
+    fig2.update_layout(title="RAG Status Distribution (Bench Only)", height=400)
     
     return jsonify({
         'charts': [
@@ -222,19 +228,18 @@ def get_locations_charts():
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
-    df = current_data
+    df = current_data[current_data['Status'] == 'Bench']
     
-    location_status = pd.crosstab(df['Location'], df['Status'])
+    if len(df) == 0:
+        return jsonify({'message': 'No bench employees found in the data'})
     
-    fig = go.Figure()
-    for status in location_status.columns:
-        fig.add_trace(go.Bar(name=status, x=location_status.index.tolist(), y=location_status[status].tolist()))
-    
-    fig.update_layout(title="Status Distribution by Location", barmode='stack', height=400)
+    location_counts = df['Location'].value_counts().head(10)
+    fig = go.Figure(data=[go.Bar(x=location_counts.index.tolist(), y=location_counts.values.tolist())])
+    fig.update_layout(title="Location Distribution (Bench Only)", height=400)
     
     return jsonify({
         'charts': [
-            {'id': 'location_status_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+            {'id': 'location_bench_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
         ]
     })
 
@@ -245,16 +250,21 @@ def data_preview():
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
     
+    bench_data = current_data[current_data['Status'] == 'Bench']
+    
+    if len(bench_data) == 0:
+        return jsonify({'message': 'No bench employees found in the data'})
+    
     display_columns = ['Employee Code', 'Employee Name', 'Gender', 'Level', 
                       'Location', 'Status', 'Tech1 Primary Skill', 'Total Experience']
     
-    available_columns = [col for col in display_columns if col in current_data.columns]
-    preview_data = current_data[available_columns].head(100)
+    available_columns = [col for col in display_columns if col in bench_data.columns]
+    preview_data = bench_data[available_columns].head(100)
     
     return jsonify({
         'columns': available_columns,
         'data': preview_data.to_dict('records'),
-        'total_rows': len(current_data)
+        'total_rows': len(bench_data)
     })
 
 @app.route('/drill_down')
