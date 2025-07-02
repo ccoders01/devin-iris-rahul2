@@ -172,22 +172,22 @@
         <div id="analyticsSection" style="display: none;">
             <ul class="nav nav-pills mb-3" id="analyticsTabs">
                 <li class="nav-item">
-                    <a class="nav-link active" href="#" onclick="showTab('overview')">📊 Overview</a>
+                    <a class="nav-link active" href="javascript:void(0)" onclick="showTab('overview', event)">📊 Overview</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showTab('demographics')">👥 Demographics</a>
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('demographics', event)">👥 Demographics</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showTab('bench')">🏗️ Bench Analysis</a>
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('bench', event)">🏗️ Bench Analysis</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showTab('skills')">🛠️ Skills</a>
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('skills', event)">🛠️ Skills</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showTab('locations')">📍 Locations</a>
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('locations', event)">📍 Locations</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#" onclick="showTab('data')">📋 Data Preview</a>
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('data', event)">📋 Data Preview</a>
                 </li>
             </ul>
 
@@ -290,14 +290,20 @@
             });
         }
 
-        function showTab(tabName) {
+        function showTab(tabName, event) {
+            if (event) {
+                event.preventDefault();
+            }
+            
             currentTab = tabName;
             
             // Update active tab
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
 
             // Clear content
             document.getElementById('chartsContainer').innerHTML = '';
@@ -419,33 +425,6 @@
             });
         }
 
-        // Fix tab clicking
-        function showTab(tabName) {
-            currentTab = tabName;
-            
-            // Update active tab
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            // Find and activate the correct tab
-            const tabs = document.querySelectorAll('.nav-link');
-            const tabNames = ['overview', 'demographics', 'bench', 'skills', 'locations', 'data'];
-            const tabIndex = tabNames.indexOf(tabName);
-            if (tabIndex >= 0 && tabs[tabIndex]) {
-                tabs[tabIndex].classList.add('active');
-            }
-
-            // Clear content
-            document.getElementById('chartsContainer').innerHTML = '';
-            document.getElementById('dataContainer').innerHTML = '';
-            
-            if (tabName === 'data') {
-                loadDataPreview();
-            } else {
-                loadCharts(tabName);
-            }
-        }
 
         function handleChartClick(chartId, point) {
             let filterValue, additionalFilter;

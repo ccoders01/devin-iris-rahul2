@@ -142,18 +142,27 @@ def get_overview_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    status_counts = df['Status'].value_counts()
-    fig1 = go.Figure(data=[go.Pie(labels=status_counts.index.tolist(), values=status_counts.values.tolist())])
-    fig1.update_layout(title=f"Employee Status Distribution {category_text}", height=400)
-    
-    location_counts = df['Location'].value_counts().head(10)
-    fig2 = go.Figure(data=[go.Bar(x=location_counts.index.tolist(), y=location_counts.values.tolist())])
-    fig2.update_layout(title=f"Top 10 Locations {category_text}", height=400)
+    if 'Client Name' in df.columns:
+        client_df = df[df['Client Name'].notna() & (df['Client Name'] != '') & (df['Client Name'] != 'N/A')]
+        
+        if len(client_df) > 0:
+            client_counts = client_df['Client Name'].value_counts()
+            fig = go.Figure(data=[go.Pie(labels=client_counts.index.tolist(), values=client_counts.values.tolist())])
+            fig.update_layout(title=f"Client Distribution {category_text}", height=500)
+        else:
+            fig = go.Figure()
+            fig.update_layout(title=f"Client Distribution - No Client Data Available {category_text}", height=500)
+            fig.add_annotation(text="No client assignments found for selected categories", 
+                             xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
+    else:
+        fig = go.Figure()
+        fig.update_layout(title=f"Client Distribution - Client Name Column Not Found {category_text}", height=500)
+        fig.add_annotation(text="Client Name column not available in data", 
+                         xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
     
     return jsonify({
         'charts': [
-            {'id': 'status_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
-            {'id': 'location_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
+            {'id': 'client_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
         ]
     })
 
@@ -327,7 +336,8 @@ def drill_down():
         'level_chart': 'Level',
         'bench_category_chart': 'Bench Category',
         'skills_chart': 'Tech1 Primary Skill',
-        'rag_chart': 'Associate RAG Status'
+        'rag_chart': 'Associate RAG Status',
+        'client_chart': 'Client Name'
     }
     
     try:
