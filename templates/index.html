@@ -60,9 +60,9 @@
             </div>
             <div class="col-md-6">
                 <div class="upload-area">
-                    <h4>🎲 Generate Sample Data</h4>
-                    <p>Create sample data for testing (500 employees)</p>
-                    <button onclick="generateSample()" class="btn btn-success">Generate Sample Data</button>
+                    <h4>📊 Load Real Excel Data</h4>
+                    <p>Load actual bench capacity data (975 employees)</p>
+                    <button onclick="generateSample()" class="btn btn-success">Load Real Excel Data</button>
                 </div>
             </div>
         </div>
@@ -212,7 +212,7 @@
                 }
             })
             .catch(error => {
-                showMessage('Failed to generate sample data: ' + error.message, 'danger');
+                showMessage('Failed to load Excel data: ' + error.message, 'danger');
             });
         }
 

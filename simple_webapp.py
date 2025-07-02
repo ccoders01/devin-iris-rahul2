@@ -17,8 +17,29 @@ from data_processor import BenchAnalyticsProcessor
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
+EXCEL_FILE_PATH = '/home/ubuntu/attachments/2e4b24c0-00f2-4392-a340-6f6a825b2663/Test_Bench+capacity+Jun+24.xlsx'
 processor = None
 current_data = None
+
+def initialize_data():
+    global processor, current_data
+    try:
+        processor = BenchAnalyticsProcessor(EXCEL_FILE_PATH)
+        if processor.load_data():
+            current_data = processor.df
+            stats = processor.get_basic_stats()
+            print(f"✅ Real data loaded successfully: {stats['total_employees']} employees")
+            print(f"   - Bench employees: {stats['bench_count']} ({stats['bench_percentage']}%)")
+            print(f"   - Allocated employees: {stats['allocated_count']}")
+            return True
+        else:
+            print("❌ Failed to load Excel data")
+            return False
+    except Exception as e:
+        print(f"❌ Error loading Excel data: {e}")
+        return False
+
+initialize_data()
 
 @app.route('/')
 def index():
@@ -62,17 +83,17 @@ def generate_sample():
     global processor, current_data
     
     try:
-        processor = BenchAnalyticsProcessor()
-        current_data = processor.generate_sample_data(500)
-        stats = processor.get_basic_stats()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Sample data generated! {stats["total_employees"]} employees created.',
-            'stats': stats
-        })
+        if initialize_data():
+            stats = processor.get_basic_stats()
+            return jsonify({
+                'success': True,
+                'message': f'Real data loaded! {stats["total_employees"]} employees from Excel file.',
+                'stats': stats
+            })
+        else:
+            return jsonify({'error': 'Failed to load Excel data'}), 500
     except Exception as e:
-        return jsonify({'error': f'Failed to generate sample data: {str(e)}'}), 500
+        return jsonify({'error': f'Failed to load Excel data: {str(e)}'}), 500
 
 @app.route('/analytics/<chart_type>')
 def get_analytics(chart_type):
