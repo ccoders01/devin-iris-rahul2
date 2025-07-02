@@ -383,6 +383,11 @@
         }
         
         function showDrillDownModal(chartId, filterValue, additionalFilter) {
+            // Store current context
+            currentChartId = chartId;
+            currentFilterValue = filterValue;
+            currentAdditionalFilter = additionalFilter;
+            
             // Show modal with loading state
             const modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
             const modalTitle = document.getElementById('drillDownModalLabel');
@@ -395,6 +400,9 @@
             }
             modalTitle.textContent = title;
             
+            // Reset grid state
+            gridConfig.currentPage = 1;
+            
             // Show loading spinner
             modalContent.innerHTML = `
                 <div class="text-center">
@@ -406,43 +414,101 @@
             
             modal.show();
             
-            // Fetch drill-down data
-            const params = new URLSearchParams({
-                chart_id: chartId,
-                filter_value: filterValue
-            });
-            if (additionalFilter) {
-                params.append('additional_filter', additionalFilter);
-            }
+            // Setup event listeners for configuration controls
+            setupConfigurationEventListeners();
             
-            fetch(window.location.origin + `/drill_down?${params}`, {
-                credentials: 'include'
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        renderEmployeeGrid(data.data, data.columns, modalContent);
-                    } else {
-                        modalContent.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
-                    }
-                })
-                .catch(error => {
-                    modalContent.innerHTML = `<div class="alert alert-danger">Failed to load data: ${error.message}</div>`;
-                });
+            // Load initial data
+            refreshGrid();
         }
         
-        function renderEmployeeGrid(employees, columns, container) {
+        function setupConfigurationEventListeners() {
+            // Search input with debounce
+            const searchInput = document.getElementById('gridSearch');
+            searchInput.removeEventListener('input', searchHandler);
+            searchInput.addEventListener('input', searchHandler);
+            
+            // Page size selector
+            const pageSizeSelect = document.getElementById('gridPageSize');
+            pageSizeSelect.removeEventListener('change', pageSizeHandler);
+            pageSizeSelect.addEventListener('change', pageSizeHandler);
+        }
+        
+        const searchHandler = debounce(function(e) {
+            gridConfig.searchTerm = e.target.value;
+            gridConfig.currentPage = 1;
+            refreshGrid();
+        }, 300);
+        
+        function pageSizeHandler(e) {
+            gridConfig.pageSize = parseInt(e.target.value);
+            gridConfig.currentPage = 1;
+            saveGridPreferences();
+            refreshGrid();
+        }
+        
+        // Grid configuration state
+        let gridConfig = {
+            currentPage: 1,
+            pageSize: 25,
+            sortColumn: 'Employee Name',
+            sortDirection: 'asc',
+            searchTerm: '',
+            visibleColumns: [],
+            allColumns: []
+        };
+        
+        // Global variables to track current drill-down context
+        let currentChartId, currentFilterValue, currentAdditionalFilter;
+        
+        function renderConfigurableGrid(data, container) {
+            if (!data.success) {
+                container.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            const employees = data.data;
+            const columns = data.columns;
+            gridConfig.allColumns = columns;
+            
+            // Load saved preferences
+            loadGridPreferences();
+            
+            // Setup column visibility controls
+            setupColumnControls(columns);
+            
+            // Render the grid
+            renderGridTable(employees, columns, container);
+            
+            // Setup pagination
+            setupPagination(data);
+            
+            // Show pagination controls
+            document.getElementById('gridPagination').style.display = 'flex';
+        }
+        
+        function renderGridTable(employees, columns, container) {
             if (employees.length === 0) {
                 container.innerHTML = '<div class="alert alert-info">No employees found for this filter.</div>';
                 return;
             }
+            
+            const visibleCols = gridConfig.visibleColumns.length > 0 ? 
+                gridConfig.visibleColumns.filter(col => columns.includes(col)) : columns;
             
             let tableHtml = `
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>
-                                ${columns.map(col => `<th>${col}</th>`).join('')}
+                                ${visibleCols.map(col => `
+                                    <th class="sortable-header" data-column="${col}" style="cursor: pointer;">
+                                        ${col}
+                                        <span class="sort-indicator">
+                                            ${gridConfig.sortColumn === col ? 
+                                              (gridConfig.sortDirection === 'asc' ? ' ↑' : ' ↓') : ' ↕'}
+                                        </span>
+                                    </th>
+                                `).join('')}
                             </tr>
                         </thead>
                         <tbody>
@@ -450,7 +516,7 @@
             
             employees.forEach(employee => {
                 tableHtml += '<tr>';
-                columns.forEach(col => {
+                visibleCols.forEach(col => {
                     const value = employee[col] || '';
                     tableHtml += `<td>${value}</td>`;
                 });
@@ -461,12 +527,214 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="mt-2">
-                    <small class="text-muted">Showing ${employees.length} employees</small>
-                </div>
             `;
             
             container.innerHTML = tableHtml;
+            
+            // Add click handlers for sorting
+            container.querySelectorAll('.sortable-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const column = header.dataset.column;
+                    handleSort(column);
+                });
+            });
+        }
+        
+        function setupColumnControls(columns) {
+            const dropdown = document.getElementById('columnDropdown');
+            dropdown.innerHTML = columns.map(col => `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="${col}" id="col_${col.replace(/\s+/g, '_')}" 
+                           ${gridConfig.visibleColumns.length === 0 || gridConfig.visibleColumns.includes(col) ? 'checked' : ''}>
+                    <label class="form-check-label small" for="col_${col.replace(/\s+/g, '_')}">
+                        ${col}
+                    </label>
+                </div>
+            `).join('');
+            
+            // Add event listeners
+            dropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', handleColumnVisibility);
+            });
+        }
+        
+        function handleColumnVisibility() {
+            const checkboxes = document.querySelectorAll('#columnDropdown input[type="checkbox"]');
+            gridConfig.visibleColumns = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            
+            saveGridPreferences();
+            refreshGrid();
+        }
+        
+        function handleSort(column) {
+            if (gridConfig.sortColumn === column) {
+                gridConfig.sortDirection = gridConfig.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                gridConfig.sortColumn = column;
+                gridConfig.sortDirection = 'asc';
+            }
+            
+            saveGridPreferences();
+            refreshGrid();
+        }
+        
+        function setupPagination(data) {
+            const info = document.getElementById('gridInfo');
+            const controls = document.getElementById('paginationControls');
+            
+            const start = (data.page - 1) * data.page_size + 1;
+            const end = Math.min(data.page * data.page_size, data.total_count);
+            
+            info.textContent = `Showing ${start}-${end} of ${data.total_count} employees`;
+            
+            // Generate pagination controls
+            let paginationHtml = '';
+            
+            // Previous button
+            paginationHtml += `
+                <li class="page-item ${data.page === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${data.page - 1})">Previous</a>
+                </li>
+            `;
+            
+            // Page numbers
+            const maxPages = Math.min(5, data.total_pages);
+            const startPage = Math.max(1, data.page - Math.floor(maxPages / 2));
+            const endPage = Math.min(data.total_pages, startPage + maxPages - 1);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `
+                    <li class="page-item ${i === data.page ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                    </li>
+                `;
+            }
+            
+            // Next button
+            paginationHtml += `
+                <li class="page-item ${data.page === data.total_pages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${data.page + 1})">Next</a>
+                </li>
+            `;
+            
+            controls.innerHTML = paginationHtml;
+        }
+        
+        function changePage(page) {
+            gridConfig.currentPage = page;
+            refreshGrid();
+        }
+        
+        function refreshGrid() {
+            const params = new URLSearchParams({
+                chart_id: currentChartId,
+                filter_value: currentFilterValue,
+                sort_column: gridConfig.sortColumn,
+                sort_direction: gridConfig.sortDirection,
+                page: gridConfig.currentPage,
+                page_size: gridConfig.pageSize,
+                visible_columns: gridConfig.visibleColumns.join(','),
+                search_term: gridConfig.searchTerm
+            });
+            
+            if (currentAdditionalFilter) {
+                params.append('additional_filter', currentAdditionalFilter);
+            }
+            
+            fetch(window.location.origin + `/drill_down?${params}`, {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('drillDownContent');
+                renderConfigurableGrid(data, container);
+            })
+            .catch(error => {
+                console.error('Grid refresh failed:', error);
+            });
+        }
+        
+        // Export functions
+        function exportGrid(format) {
+            const params = new URLSearchParams({
+                chart_id: currentChartId,
+                filter_value: currentFilterValue,
+                sort_column: gridConfig.sortColumn,
+                sort_direction: gridConfig.sortDirection,
+                page: 1,
+                page_size: 10000,
+                visible_columns: gridConfig.visibleColumns.join(','),
+                search_term: gridConfig.searchTerm,
+                export_format: format
+            });
+            
+            if (currentAdditionalFilter) {
+                params.append('additional_filter', currentAdditionalFilter);
+            }
+            
+            // Create download link
+            const url = window.location.origin + `/drill_down?${params}`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `employees_${currentFilterValue}_${new Date().toISOString().split('T')[0]}.${format}`;
+            link.click();
+        }
+        
+        // Preferences management
+        function saveGridPreferences() {
+            localStorage.setItem('benchAnalyticsGridConfig', JSON.stringify(gridConfig));
+        }
+        
+        function loadGridPreferences() {
+            const saved = localStorage.getItem('benchAnalyticsGridConfig');
+            if (saved) {
+                const savedConfig = JSON.parse(saved);
+                gridConfig = { ...gridConfig, ...savedConfig };
+                
+                // Update UI controls
+                document.getElementById('gridSearch').value = gridConfig.searchTerm;
+                document.getElementById('gridPageSize').value = gridConfig.pageSize;
+            }
+        }
+        
+        function resetGridConfig() {
+            gridConfig = {
+                currentPage: 1,
+                pageSize: 25,
+                sortColumn: 'Employee Name',
+                sortDirection: 'asc',
+                searchTerm: '',
+                visibleColumns: [],
+                allColumns: gridConfig.allColumns
+            };
+            
+            localStorage.removeItem('benchAnalyticsGridConfig');
+            
+            // Reset UI controls
+            document.getElementById('gridSearch').value = '';
+            document.getElementById('gridPageSize').value = '25';
+            
+            // Reset column checkboxes
+            document.querySelectorAll('#columnDropdown input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+            });
+            
+            refreshGrid();
+        }
+        
+        // Debounce utility function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
         }
     </script>
 
@@ -479,12 +747,62 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <!-- Configuration Panel -->
+                    <div id="gridConfigPanel" class="border-bottom pb-3 mb-3">
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label small">Search:</label>
+                                <input type="text" id="gridSearch" class="form-control form-control-sm" placeholder="Search employees...">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Page Size:</label>
+                                <select id="gridPageSize" class="form-select form-select-sm">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Columns:</label>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100" type="button" id="columnToggle" data-bs-toggle="dropdown">
+                                        Manage Columns
+                                    </button>
+                                    <div class="dropdown-menu p-2" id="columnDropdown" style="min-width: 200px;">
+                                        <!-- Column checkboxes will be populated dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Export:</label>
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="exportGrid('csv')">CSV</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="exportGrid('excel')">Excel</button>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Reset:</label>
+                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="resetGridConfig()">Reset</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Grid Container -->
                     <div id="drillDownContent">
                         <div class="text-center">
                             <div class="spinner-border" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
                         </div>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="gridPagination" class="d-flex justify-content-between align-items-center mt-3" style="display: none !important;">
+                        <div class="text-muted small" id="gridInfo"></div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0" id="paginationControls"></ul>
+                        </nav>
                     </div>
                 </div>
                 <div class="modal-footer">

@@ -4,7 +4,7 @@ Simple Flask Web Application for Bench Analytics
 A more reliable alternative to the Dash implementation
 """
 
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, Response
 import pandas as pd
 import numpy as np
 import plotly.graph_objs as go
@@ -245,7 +245,15 @@ def drill_down():
     
     chart_id = request.args.get('chart_id')
     filter_value = request.args.get('filter_value')
-    additional_filter = request.args.get('additional_filter')  # For stacked charts
+    additional_filter = request.args.get('additional_filter')
+    
+    sort_column = request.args.get('sort_column', 'Employee Name')
+    sort_direction = request.args.get('sort_direction', 'asc')
+    page = int(request.args.get('page', 1))
+    page_size = int(request.args.get('page_size', 25))
+    visible_columns = request.args.get('visible_columns', '').split(',') if request.args.get('visible_columns') else None
+    search_term = request.args.get('search_term', '')
+    export_format = request.args.get('export_format')
     
     chart_column_map = {
         'status_chart': 'Status',
@@ -286,11 +294,58 @@ def drill_down():
         available_columns = [col for col in display_columns if col in df.columns]
         result_df = df[available_columns]
         
+        if search_term:
+            search_mask = result_df.astype(str).apply(
+                lambda x: x.str.contains(search_term, case=False, na=False)
+            ).any(axis=1)
+            result_df = result_df[search_mask]
+        
+        if sort_column in result_df.columns:
+            ascending = sort_direction.lower() == 'asc'
+            result_df = result_df.sort_values(by=sort_column, ascending=ascending)
+        
+        if visible_columns:
+            visible_columns = [col for col in visible_columns if col in available_columns]
+            if visible_columns:
+                available_columns = visible_columns
+                result_df = result_df[available_columns]
+        
+        if export_format in ['csv', 'excel']:
+            if export_format == 'csv':
+                output = io.StringIO()
+                result_df.to_csv(output, index=False)
+                output.seek(0)
+                return Response(
+                    output.getvalue(),
+                    mimetype='text/csv',
+                    headers={'Content-Disposition': f'attachment; filename=employees_{filter_value}.csv'}
+                )
+            elif export_format == 'excel':
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    result_df.to_excel(writer, index=False, sheet_name='Employees')
+                output.seek(0)
+                return Response(
+                    output.getvalue(),
+                    mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    headers={'Content-Disposition': f'attachment; filename=employees_{filter_value}.xlsx'}
+                )
+        
+        total_count = len(result_df)
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_df = result_df.iloc[start_idx:end_idx]
+        
         return jsonify({
             'success': True,
-            'data': result_df.to_dict('records'),
+            'data': paginated_df.to_dict('records'),
             'columns': available_columns,
-            'total_count': len(result_df),
+            'total_count': total_count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total_count + page_size - 1) // page_size,
+            'sort_column': sort_column,
+            'sort_direction': sort_direction,
             'filter_info': {
                 'chart_id': chart_id,
                 'filter_value': filter_value,
