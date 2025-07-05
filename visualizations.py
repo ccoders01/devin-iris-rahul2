@@ -52,22 +52,18 @@ class BenchAnalyticsVisualizer:
             valid_dates = valid_dates.dropna()
             
             if len(valid_dates) > 0:
-                future_dates = valid_dates[valid_dates > pd.Timestamp.now()]
+                monthly_counts = valid_dates.dt.to_period('M').value_counts().sort_index()
                 
-                if len(future_dates) > 0:
-                    monthly_counts = future_dates.dt.to_period('M').value_counts().sort_index()
-                    
-                    months = [period.strftime('%b %Y') for period in monthly_counts.index]
-                    counts = monthly_counts.values.tolist()
-                    
-                    axes[1].barh(months, counts, color='#ff7f0e', alpha=0.7)
-                    axes[1].set_title('Projected Bench - Monthly Release Projections')
-                    axes[1].set_xlabel('Employee Count')
-                    axes[1].set_ylabel('Month')
-                    axes[1].grid(True, alpha=0.3)
-                else:
-                    axes[1].text(0.5, 0.5, 'No Future Release Dates Found', ha='center', va='center', transform=axes[1].transAxes)
-                    axes[1].set_title('Projected Bench - No Data Available')
+                months = [period.strftime('%b %Y') for period in monthly_counts.index]
+                counts = monthly_counts.values.tolist()
+                
+                axes[1].plot(months, counts, marker='o', linewidth=3, markersize=8, color='#ff7f0e')
+                axes[1].fill_between(months, counts, alpha=0.3, color='#ff7f0e')
+                axes[1].set_title('Projected Bench - Monthly Release Projections')
+                axes[1].set_xlabel('Month')
+                axes[1].set_ylabel('Employee Count')
+                axes[1].tick_params(axis='x', rotation=45)
+                axes[1].grid(True, alpha=0.3)
             else:
                 axes[1].text(0.5, 0.5, 'No Valid Release Dates Found', ha='center', va='center', transform=axes[1].transAxes)
                 axes[1].set_title('Projected Bench - No Data Available')

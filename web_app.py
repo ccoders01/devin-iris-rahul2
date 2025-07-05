@@ -291,34 +291,29 @@ class BenchAnalyticsWebApp:
             valid_dates = valid_dates.dropna()
             
             if len(valid_dates) > 0:
-                future_dates = valid_dates[valid_dates > pd.Timestamp.now()]
+                monthly_counts = valid_dates.dt.to_period('M').value_counts().sort_index()
                 
-                if len(future_dates) > 0:
-                    monthly_counts = future_dates.dt.to_period('M').value_counts().sort_index()
-                    
-                    months = [period.strftime('%b %Y') for period in monthly_counts.index]
-                    counts = monthly_counts.values.tolist()
-                    
-                    fig2 = go.Figure(data=[go.Scatter(
-                        x=counts,
-                        y=months,
-                        mode='lines+markers',
-                        line=dict(width=3, color='#ff7f0e'),
-                        marker=dict(size=8, color='#ff7f0e'),
-                        orientation='h'
-                    )])
-                    
-                    fig2.update_layout(
-                        title="Projected Bench - Monthly Release Projections (All Categories)", 
-                        height=400,
-                        xaxis_title="Employee Count",
-                        yaxis_title="Month",
-                        showlegend=False
-                    )
-                    
-                    charts.append(dbc.Col([dcc.Graph(figure=fig2)], width=12))
-                else:
-                    charts.append(dbc.Col([html.Div("Projected Bench - No Future Release Dates Found", className="alert alert-info")], width=12))
+                months = [period.strftime('%b %Y') for period in monthly_counts.index]
+                counts = monthly_counts.values.tolist()
+                
+                fig2 = go.Figure(data=[go.Scatter(
+                    x=months,
+                    y=counts,
+                    mode='lines+markers',
+                    line=dict(width=3, color='#ff7f0e'),
+                    marker=dict(size=8, color='#ff7f0e')
+                )])
+                
+                fig2.update_layout(
+                    title="Projected Bench - Monthly Release Projections (All Categories)", 
+                    height=400,
+                    xaxis_title="Month",
+                    yaxis_title="Employee Count",
+                    xaxis=dict(tickangle=45),
+                    showlegend=False
+                )
+                
+                charts.append(dbc.Col([dcc.Graph(figure=fig2)], width=12))
             else:
                 charts.append(dbc.Col([html.Div("Projected Bench - No Valid Release Dates Found", className="alert alert-info")], width=12))
         else:
