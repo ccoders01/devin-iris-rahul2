@@ -128,6 +128,8 @@ def get_analytics(chart_type):
             return get_skills_charts(selected_categories)
         elif chart_type == 'locations':
             return get_locations_charts(selected_categories)
+        elif chart_type == 'ageing':
+            return get_ageing_charts(selected_categories)
         else:
             return jsonify({'error': 'Invalid chart type'}), 400
             
@@ -142,27 +144,27 @@ def get_overview_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    if 'Designation' in df.columns:
-        designation_df = df[df['Designation'].notna() & (df['Designation'] != '') & (df['Designation'] != 'N/A')]
+    if 'Level' in df.columns:
+        level_df = df[df['Level'].notna() & (df['Level'] != '') & (df['Level'] != 'N/A')]
         
-        if len(designation_df) > 0:
-            designation_counts = designation_df['Designation'].value_counts()
-            fig = go.Figure(data=[go.Pie(labels=designation_counts.index.tolist(), values=designation_counts.values.tolist())])
-            fig.update_layout(title=f"Designation Distribution {category_text}", height=500)
+        if len(level_df) > 0:
+            level_counts = level_df['Level'].value_counts()
+            fig = go.Figure(data=[go.Pie(labels=level_counts.index.tolist(), values=level_counts.values.tolist())])
+            fig.update_layout(title=f"Level Distribution {category_text}", height=500)
         else:
             fig = go.Figure()
-            fig.update_layout(title=f"Designation Distribution - No Designation Data Available {category_text}", height=500)
-            fig.add_annotation(text="No designation assignments found for selected categories", 
+            fig.update_layout(title=f"Level Distribution - No Level Data Available {category_text}", height=500)
+            fig.add_annotation(text="No level assignments found for selected categories", 
                              xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
     else:
         fig = go.Figure()
-        fig.update_layout(title=f"Designation Distribution - Designation Column Not Found {category_text}", height=500)
-        fig.add_annotation(text="Designation column not available in data", 
+        fig.update_layout(title=f"Level Distribution - Level Column Not Found {category_text}", height=500)
+        fig.add_annotation(text="Level column not available in data", 
                          xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
     
     return jsonify({
         'charts': [
-            {'id': 'designation_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+            {'id': 'level_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
         ]
     })
 
@@ -283,6 +285,44 @@ def get_locations_charts(selected_categories=None):
         ]
     })
 
+def get_ageing_charts(selected_categories=None):
+    if current_data is None:
+        return jsonify({'error': 'No data available'}), 400
+        
+    df = filter_by_categories(current_data, selected_categories)
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
+    
+    if 'Actual Ageing' in df.columns:
+        ageing_weeks = {}
+        for _, row in df.iterrows():
+            days = row['Actual Ageing']
+            if pd.notna(days) and days >= 0:
+                week_num = int((days - 1) // 7) + 1
+                week_label = f"Week {week_num}"
+                ageing_weeks[week_label] = ageing_weeks.get(week_label, 0) + 1
+        
+        if ageing_weeks:
+            sorted_weeks = sorted(ageing_weeks.items(), key=lambda x: int(x[0].split()[1]))
+            labels, values = zip(*sorted_weeks)
+            fig = go.Figure(data=[go.Pie(labels=list(labels), values=list(values))])
+            fig.update_layout(title=f"Ageing Distribution (Weeks) {category_text}", height=500)
+        else:
+            fig = go.Figure()
+            fig.update_layout(title=f"Ageing Distribution - No Data Available {category_text}", height=500)
+    else:
+        fig = go.Figure()
+        fig.update_layout(title=f"Ageing Distribution - Actual Ageing Column Not Found {category_text}", height=500)
+    
+    return jsonify({
+        'charts': [
+            {'id': 'ageing_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+        ]
+    })
+
 @app.route('/data_preview')
 def data_preview():
     global current_data
@@ -338,7 +378,7 @@ def drill_down():
         'bench_category_chart': 'Bench Category',
         'skills_chart': 'Tech1 Primary Skill',
         'rag_chart': 'Associate RAG Status',
-        'designation_chart': 'Designation'
+        'ageing_chart': 'Actual Ageing'
     }
     
     try:
@@ -358,6 +398,11 @@ def drill_down():
                 df = df[(df['Current Ageing'] > 28) & (df['Current Ageing'] <= 56)]
             elif filter_value == '8+ weeks':
                 df = df[df['Current Ageing'] > 56]
+        elif chart_id == 'ageing_chart':
+            week_num = int(filter_value.split()[1])
+            start_day = (week_num - 1) * 7 + 1
+            end_day = week_num * 7
+            df = df[(df['Actual Ageing'] >= start_day) & (df['Actual Ageing'] <= end_day)]
         elif chart_id == 'location_status_chart':
             df = df[df['Location'] == filter_value]
             if additional_filter:
