@@ -195,7 +195,7 @@ def get_trends_charts(selected_categories=None):
                 progression_counts.append(slab_counts[slab])
                 x_labels.append(slab)
         
-        fig = go.Figure(data=[go.Scatter(
+        fig1 = go.Figure(data=[go.Scatter(
             x=x_labels, 
             y=progression_counts,
             mode='lines+markers',
@@ -205,21 +205,61 @@ def get_trends_charts(selected_categories=None):
             fillcolor='rgba(31, 119, 180, 0.1)'
         )])
         
-        fig.update_layout(
+        fig1.update_layout(
             title=f"Employee Progression Through Ageing Slabs {category_text}", 
-            height=500,
+            height=400,
             xaxis_title="Ageing Slab",
             yaxis_title="Employee Count",
             xaxis=dict(tickangle=45),
             showlegend=False
         )
     else:
-        fig = go.Figure()
-        fig.update_layout(title=f"Ageing Trends - Actual Ageing Slab Column Not Found {category_text}", height=500)
+        fig1 = go.Figure()
+        fig1.update_layout(title=f"Ageing Trends - Actual Ageing Slab Column Not Found {category_text}", height=400)
+    
+    if 'Planned ReleaseDate' in current_data.columns:
+        valid_dates = pd.to_datetime(current_data['Planned ReleaseDate'], errors='coerce')
+        valid_dates = valid_dates.dropna()
+        
+        if len(valid_dates) > 0:
+            future_dates = valid_dates[valid_dates > pd.Timestamp.now()]
+            
+            if len(future_dates) > 0:
+                monthly_counts = future_dates.dt.to_period('M').value_counts().sort_index()
+                
+                months = [period.strftime('%b %Y') for period in monthly_counts.index]
+                counts = monthly_counts.values.tolist()
+                
+                fig2 = go.Figure(data=[go.Scatter(
+                    x=counts,
+                    y=months,
+                    mode='lines+markers',
+                    line=dict(width=3, color='#ff7f0e'),
+                    marker=dict(size=8, color='#ff7f0e'),
+                    orientation='h'
+                )])
+                
+                fig2.update_layout(
+                    title="Projected Bench - Monthly Release Projections (All Categories)", 
+                    height=400,
+                    xaxis_title="Employee Count",
+                    yaxis_title="Month",
+                    showlegend=False
+                )
+            else:
+                fig2 = go.Figure()
+                fig2.update_layout(title="Projected Bench - No Future Release Dates Found", height=400)
+        else:
+            fig2 = go.Figure()
+            fig2.update_layout(title="Projected Bench - No Valid Release Dates Found", height=400)
+    else:
+        fig2 = go.Figure()
+        fig2.update_layout(title="Projected Bench - Planned ReleaseDate Column Not Found", height=400)
     
     return jsonify({
         'charts': [
-            {'id': 'trends_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+            {'id': 'trends_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
+            {'id': 'projected_bench_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
         ]
     })
 
@@ -402,7 +442,8 @@ def drill_down():
         'skills_chart': 'Tech1 Primary Skill',
         'rag_chart': 'Associate RAG Status',
         'ageing_chart': 'Actual Ageing',
-        'trends_chart': 'Actual Ageing Slab'
+        'trends_chart': 'Actual Ageing Slab',
+        'projected_bench_chart': 'Planned ReleaseDate'
     }
     
     try:

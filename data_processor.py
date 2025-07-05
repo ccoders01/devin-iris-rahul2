@@ -170,6 +170,17 @@ class BenchAnalyticsProcessor:
                 for i in range(num_rows)
             ]
         
+        allocated_mask = np.array(sample_data['Status']) == 'Allocated'
+        if allocated_mask.sum() > 0:
+            start_date = pd.Timestamp.now() + pd.DateOffset(months=1)
+            end_date = pd.Timestamp.now() + pd.DateOffset(months=12)
+            future_dates = pd.date_range(start=start_date, end=end_date, freq='D')
+            
+            sample_data['Planned ReleaseDate'] = ['' for _ in range(num_rows)]
+            for i in range(num_rows):
+                if allocated_mask[i]:
+                    sample_data['Planned ReleaseDate'][i] = np.random.choice(future_dates)
+        
         for col in self.column_categories['employee_info'] + \
                    self.column_categories['location_info'] + \
                    self.column_categories['project_allocation'] + \

@@ -255,7 +255,7 @@ class BenchAnalyticsDashboard:
                     progression_counts.append(slab_counts[slab])
                     x_labels.append(slab)
             
-            fig = go.Figure(data=[go.Scatter(
+            fig1 = go.Figure(data=[go.Scatter(
                 x=x_labels, 
                 y=progression_counts,
                 mode='lines+markers',
@@ -265,20 +265,60 @@ class BenchAnalyticsDashboard:
                 fillcolor='rgba(31, 119, 180, 0.1)'
             )])
             
-            fig.update_layout(
+            fig1.update_layout(
                 title="Employee Progression Through Ageing Slabs", 
-                height=500,
+                height=400,
                 xaxis_title="Ageing Slab",
                 yaxis_title="Employee Count",
                 xaxis=dict(tickangle=45),
                 showlegend=False
             )
         else:
-            fig = go.Figure()
-            fig.update_layout(title='Ageing Trends - Actual Ageing Slab Column Not Found', height=500)
+            fig1 = go.Figure()
+            fig1.update_layout(title='Ageing Trends - Actual Ageing Slab Column Not Found', height=400)
+        
+        if 'Planned ReleaseDate' in self.processor.df.columns:
+            valid_dates = pd.to_datetime(self.processor.df['Planned ReleaseDate'], errors='coerce')
+            valid_dates = valid_dates.dropna()
+            
+            if len(valid_dates) > 0:
+                future_dates = valid_dates[valid_dates > pd.Timestamp.now()]
+                
+                if len(future_dates) > 0:
+                    monthly_counts = future_dates.dt.to_period('M').value_counts().sort_index()
+                    
+                    months = [period.strftime('%b %Y') for period in monthly_counts.index]
+                    counts = monthly_counts.values.tolist()
+                    
+                    fig2 = go.Figure(data=[go.Scatter(
+                        x=counts,
+                        y=months,
+                        mode='lines+markers',
+                        line=dict(width=3, color='#ff7f0e'),
+                        marker=dict(size=8, color='#ff7f0e'),
+                        orientation='h'
+                    )])
+                    
+                    fig2.update_layout(
+                        title="Projected Bench - Monthly Release Projections (All Categories)", 
+                        height=400,
+                        xaxis_title="Employee Count",
+                        yaxis_title="Month",
+                        showlegend=False
+                    )
+                else:
+                    fig2 = go.Figure()
+                    fig2.update_layout(title="Projected Bench - No Future Release Dates Found", height=400)
+            else:
+                fig2 = go.Figure()
+                fig2.update_layout(title="Projected Bench - No Valid Release Dates Found", height=400)
+        else:
+            fig2 = go.Figure()
+            fig2.update_layout(title="Projected Bench - Planned ReleaseDate Column Not Found", height=400)
         
         return dbc.Row([
-            dbc.Col([dcc.Graph(figure=fig)], width=12)
+            dbc.Col([dcc.Graph(figure=fig1)], width=12),
+            dbc.Col([dcc.Graph(figure=fig2)], width=12)
         ])
     
     def create_data_tab(self, df):

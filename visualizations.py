@@ -17,8 +17,8 @@ class BenchAnalyticsVisualizer:
         if self.df is None or len(self.df) == 0:
             return None
             
-        fig, ax = plt.subplots(1, 1, figsize=(15, 8))
-        fig.suptitle('Employee Progression Through Ageing Slabs', fontsize=16, fontweight='bold')
+        fig, axes = plt.subplots(2, 1, figsize=(15, 12))
+        fig.suptitle('Employee Trends Analysis', fontsize=16, fontweight='bold')
         
         if 'Actual Ageing Slab' in self.df.columns:
             slab_counts = self.df['Actual Ageing Slab'].value_counts()
@@ -36,16 +36,44 @@ class BenchAnalyticsVisualizer:
                     progression_counts.append(slab_counts[slab])
                     x_labels.append(slab)
             
-            ax.plot(x_labels, progression_counts, marker='o', linewidth=3, markersize=8, color='#1f77b4')
-            ax.fill_between(x_labels, progression_counts, alpha=0.3, color='#1f77b4')
-            ax.set_title('Employee Progression Through Ageing Slabs')
-            ax.set_xlabel('Ageing Slab')
-            ax.set_ylabel('Employee Count')
-            ax.tick_params(axis='x', rotation=45)
-            ax.grid(True, alpha=0.3)
+            axes[0].plot(x_labels, progression_counts, marker='o', linewidth=3, markersize=8, color='#1f77b4')
+            axes[0].fill_between(x_labels, progression_counts, alpha=0.3, color='#1f77b4')
+            axes[0].set_title('Employee Progression Through Ageing Slabs')
+            axes[0].set_xlabel('Ageing Slab')
+            axes[0].set_ylabel('Employee Count')
+            axes[0].tick_params(axis='x', rotation=45)
+            axes[0].grid(True, alpha=0.3)
         else:
-            ax.text(0.5, 0.5, 'Actual Ageing Slab data not available', ha='center', va='center', transform=ax.transAxes)
-            ax.set_title('Ageing Trends - No Data Available')
+            axes[0].text(0.5, 0.5, 'Actual Ageing Slab data not available', ha='center', va='center', transform=axes[0].transAxes)
+            axes[0].set_title('Ageing Trends - No Data Available')
+        
+        if 'Planned ReleaseDate' in self.df.columns:
+            valid_dates = pd.to_datetime(self.df['Planned ReleaseDate'], errors='coerce')
+            valid_dates = valid_dates.dropna()
+            
+            if len(valid_dates) > 0:
+                future_dates = valid_dates[valid_dates > pd.Timestamp.now()]
+                
+                if len(future_dates) > 0:
+                    monthly_counts = future_dates.dt.to_period('M').value_counts().sort_index()
+                    
+                    months = [period.strftime('%b %Y') for period in monthly_counts.index]
+                    counts = monthly_counts.values.tolist()
+                    
+                    axes[1].barh(months, counts, color='#ff7f0e', alpha=0.7)
+                    axes[1].set_title('Projected Bench - Monthly Release Projections')
+                    axes[1].set_xlabel('Employee Count')
+                    axes[1].set_ylabel('Month')
+                    axes[1].grid(True, alpha=0.3)
+                else:
+                    axes[1].text(0.5, 0.5, 'No Future Release Dates Found', ha='center', va='center', transform=axes[1].transAxes)
+                    axes[1].set_title('Projected Bench - No Data Available')
+            else:
+                axes[1].text(0.5, 0.5, 'No Valid Release Dates Found', ha='center', va='center', transform=axes[1].transAxes)
+                axes[1].set_title('Projected Bench - No Data Available')
+        else:
+            axes[1].text(0.5, 0.5, 'Planned ReleaseDate column not found', ha='center', va='center', transform=axes[1].transAxes)
+            axes[1].set_title('Projected Bench - Column Not Found')
         
         plt.tight_layout()
         
