@@ -151,22 +151,41 @@ def get_overview_charts(selected_categories=None):
         
         if len(level_df) > 0:
             level_counts = level_df['Level'].value_counts()
-            fig = go.Figure(data=[go.Pie(labels=level_counts.index.tolist(), values=level_counts.values.tolist())])
-            fig.update_layout(title=f"Level Distribution {category_text}", height=500)
+            fig1 = go.Figure(data=[go.Pie(labels=level_counts.index.tolist(), values=level_counts.values.tolist())])
+            fig1.update_layout(title=f"Level Distribution {category_text}", height=400)
         else:
-            fig = go.Figure()
-            fig.update_layout(title=f"Level Distribution - No Level Data Available {category_text}", height=500)
-            fig.add_annotation(text="No level assignments found for selected categories", 
+            fig1 = go.Figure()
+            fig1.update_layout(title=f"Level Distribution - No Level Data Available {category_text}", height=400)
+            fig1.add_annotation(text="No level assignments found for selected categories", 
                              xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
     else:
-        fig = go.Figure()
-        fig.update_layout(title=f"Level Distribution - Level Column Not Found {category_text}", height=500)
-        fig.add_annotation(text="Level column not available in data", 
+        fig1 = go.Figure()
+        fig1.update_layout(title=f"Level Distribution - Level Column Not Found {category_text}", height=400)
+        fig1.add_annotation(text="Level column not available in data", 
+                         xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
+    
+    if 'ATL Eligible' in df.columns:
+        atl_df = df[df['ATL Eligible'].notna() & (df['ATL Eligible'] != '') & (df['ATL Eligible'] != 'N/A')]
+        
+        if len(atl_df) > 0:
+            atl_counts = atl_df['ATL Eligible'].value_counts()
+            fig2 = go.Figure(data=[go.Pie(labels=atl_counts.index.tolist(), values=atl_counts.values.tolist())])
+            fig2.update_layout(title=f"ATL Eligible Distribution {category_text}", height=400)
+        else:
+            fig2 = go.Figure()
+            fig2.update_layout(title=f"ATL Eligible Distribution - No ATL Data Available {category_text}", height=400)
+            fig2.add_annotation(text="No ATL eligible data found for selected categories", 
+                             xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
+    else:
+        fig2 = go.Figure()
+        fig2.update_layout(title=f"ATL Eligible Distribution - ATL Column Not Found {category_text}", height=400)
+        fig2.add_annotation(text="ATL Eligible column not available in data", 
                          xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
     
     return jsonify({
         'charts': [
-            {'id': 'level_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+            {'id': 'level_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
+            {'id': 'atl_eligible_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
         ]
     })
 
@@ -449,6 +468,8 @@ def drill_down():
         'opportunities_chart': 'Available for Other BU',
         'bench_source_chart': 'Hired_Released',
         'training_plan_chart': 'Training Plan',
+        'level_chart': 'Level',
+        'atl_eligible_chart': 'ATL Eligible',
         'rag_chart': 'Associate RAG Status',
         'ageing_chart': 'Actual Ageing',
         'trends_chart': 'Actual Ageing Slab',

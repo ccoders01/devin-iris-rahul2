@@ -478,53 +478,116 @@
                 const container = document.getElementById('chartsContainer');
                 container.innerHTML = '';
 
-                data.charts.forEach((chart, index) => {
-                    const chartDiv = document.createElement('div');
-                    chartDiv.className = 'chart-container position-relative';
-                    chartDiv.id = chart.id;
-                    chartDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border text-primary"></div></div>';
-                    container.appendChild(chartDiv);
-
-                    Plotly.newPlot(chart.id, chart.data.data, chart.data.layout, {
-                        responsive: true,
-                        displayModeBar: false,
-                        showTips: true
-                    }).then(function() {
-                        // Remove loading overlay after chart is successfully rendered
-                        const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
-                        if (loadingOverlay) {
-                            loadingOverlay.remove();
-                        }
+                // Check if this is the overview tab with multiple charts for side-by-side layout
+                if (chartType === 'overview' && data.charts.length === 2) {
+                    // Create a row container for side-by-side layout
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'row';
+                    container.appendChild(rowDiv);
+                    
+                    data.charts.forEach((chart, index) => {
+                        // Create column wrapper for each chart
+                        const colDiv = document.createElement('div');
+                        colDiv.className = 'col-md-6';
                         
-                        // Add click event listener after plot is created
-                        const plotElement = document.getElementById(chart.id);
+                        const chartDiv = document.createElement('div');
+                        chartDiv.className = 'chart-container position-relative';
+                        chartDiv.id = chart.id;
+                        chartDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border text-primary"></div></div>';
                         
-                        // Remove any existing listeners first
-                        if (plotElement.removeAllListeners) {
-                            plotElement.removeAllListeners('plotly_click');
-                        }
+                        colDiv.appendChild(chartDiv);
+                        rowDiv.appendChild(colDiv);
                         
-                        // Attach click event listener
-                        plotElement.on('plotly_click', function(eventData) {
-                            console.log('Chart clicked:', chart.id, eventData);
-                            if (eventData.points && eventData.points.length > 0) {
-                                handleChartClick(chart.id, eventData.points[0]);
+                        Plotly.newPlot(chart.id, chart.data.data, chart.data.layout, {
+                            responsive: true,
+                            displayModeBar: false,
+                            showTips: true
+                        }).then(function() {
+                            // Remove loading overlay after chart is successfully rendered
+                            const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
+                            if (loadingOverlay) {
+                                loadingOverlay.remove();
                             }
+                            
+                            // Add click event listener after plot is created
+                            const plotElement = document.getElementById(chart.id);
+                            
+                            // Remove any existing listeners first
+                            if (plotElement.removeAllListeners) {
+                                plotElement.removeAllListeners('plotly_click');
+                            }
+                            
+                            // Attach click event listener
+                            plotElement.on('plotly_click', function(eventData) {
+                                console.log('Chart clicked:', chart.id, eventData);
+                                if (eventData.points && eventData.points.length > 0) {
+                                    handleChartClick(chart.id, eventData.points[0]);
+                                }
+                            });
+                            
+                            console.log('Click handler attached to chart:', chart.id);
+                        }).catch(function(error) {
+                            console.error('Error creating plot:', chart.id, error);
+                            // Remove loading overlay even on error
+                            const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
+                            if (loadingOverlay) {
+                                loadingOverlay.remove();
+                            }
+                            // Show error message in chart container
+                            document.getElementById(chart.id).innerHTML = 
+                                `<div class="alert alert-danger">Failed to load chart: ${error.message}</div>`;
                         });
-                        
-                        console.log('Click handler attached to chart:', chart.id);
-                    }).catch(function(error) {
-                        console.error('Error creating plot:', chart.id, error);
-                        // Remove loading overlay even on error
-                        const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
-                        if (loadingOverlay) {
-                            loadingOverlay.remove();
-                        }
-                        // Show error message in chart container
-                        document.getElementById(chart.id).innerHTML = 
-                            `<div class="alert alert-danger">Failed to load chart: ${error.message}</div>`;
                     });
-                });
+                } else {
+                    // Default stacked layout for other tabs
+                    data.charts.forEach((chart, index) => {
+                        const chartDiv = document.createElement('div');
+                        chartDiv.className = 'chart-container position-relative';
+                        chartDiv.id = chart.id;
+                        chartDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border text-primary"></div></div>';
+                        container.appendChild(chartDiv);
+
+                        Plotly.newPlot(chart.id, chart.data.data, chart.data.layout, {
+                            responsive: true,
+                            displayModeBar: false,
+                            showTips: true
+                        }).then(function() {
+                            // Remove loading overlay after chart is successfully rendered
+                            const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
+                            if (loadingOverlay) {
+                                loadingOverlay.remove();
+                            }
+                            
+                            // Add click event listener after plot is created
+                            const plotElement = document.getElementById(chart.id);
+                            
+                            // Remove any existing listeners first
+                            if (plotElement.removeAllListeners) {
+                                plotElement.removeAllListeners('plotly_click');
+                            }
+                            
+                            // Attach click event listener
+                            plotElement.on('plotly_click', function(eventData) {
+                                console.log('Chart clicked:', chart.id, eventData);
+                                if (eventData.points && eventData.points.length > 0) {
+                                    handleChartClick(chart.id, eventData.points[0]);
+                                }
+                            });
+                            
+                            console.log('Click handler attached to chart:', chart.id);
+                        }).catch(function(error) {
+                            console.error('Error creating plot:', chart.id, error);
+                            // Remove loading overlay even on error
+                            const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
+                            if (loadingOverlay) {
+                                loadingOverlay.remove();
+                            }
+                            // Show error message in chart container
+                            document.getElementById(chart.id).innerHTML = 
+                                `<div class="alert alert-danger">Failed to load chart: ${error.message}</div>`;
+                        });
+                    });
+                }
             })
             .catch(error => {
                 document.getElementById('loadingSpinner').style.display = 'none';
