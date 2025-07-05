@@ -303,15 +303,9 @@ def get_skills_charts(selected_categories=None):
         fig1 = go.Figure()
         fig1.update_layout(title=f"Training Plan Distribution - No Data Available {category_text}", height=400)
     
-    rag_counts = df['Associate RAG Status'].value_counts()
-    colors = {'Green': 'green', 'Amber': 'orange', 'Red': 'red'}
-    fig2 = go.Figure(data=[go.Pie(labels=rag_counts.index.tolist(), values=rag_counts.values.tolist())])
-    fig2.update_layout(title=f"Associate RAG Status Distribution {category_text}", height=400)
-    
     return jsonify({
         'charts': [
-            {'id': 'training_plan_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
-            {'id': 'rag_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
+            {'id': 'training_plan_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))}
         ]
     })
 

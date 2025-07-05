@@ -124,6 +124,22 @@
             box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
         }
         
+        .btn-outline-primary:hover,
+        .btn-outline-primary:focus,
+        .btn-outline-primary:active {
+            background-color: transparent !important;
+            border-color: var(--primary-color) !important;
+            color: var(--primary-color) !important;
+        }
+        
+        .btn-outline-secondary:hover,
+        .btn-outline-secondary:focus,
+        .btn-outline-secondary:active {
+            background-color: transparent !important;
+            border-color: #6c757d !important;
+            color: #6c757d !important;
+        }
+        
         .card {
             border: none;
             border-radius: var(--border-radius);
@@ -267,33 +283,6 @@
         <!-- Status Messages -->
         <div id="statusMessage" class="alert" style="display: none;"></div>
 
-        <!-- Key Metrics -->
-        <div id="keyMetrics" class="row mb-4" style="display: none;">
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5>Total Employees</h5>
-                    <h2 id="totalEmployees">-</h2>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5>Bench Count</h5>
-                    <h2 id="benchCount">-</h2>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5>Bench %</h5>
-                    <h2 id="benchPercentage">-</h2>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stats-card">
-                    <h5>Avg Experience</h5>
-                    <h2 id="avgExperience">-</h2>
-                </div>
-            </div>
-        </div>
 
         <!-- Analytics Tabs -->
         <div id="analyticsSection" style="display: none;">
@@ -311,7 +300,7 @@
                     <a class="nav-link" href="javascript:void(0)" onclick="showTab('opportunities', event)" role="tab" aria-selected="false" aria-controls="opportunities-panel">🎯 Opportunities</a>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('skills', event)" role="tab" aria-selected="false" aria-controls="skills-panel">🛠️ Skills</a>
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('skills', event)" role="tab" aria-selected="false" aria-controls="skills-panel">📚 Trainings</a>
                 </li>
                 <li class="nav-item" role="presentation">
                     <a class="nav-link" href="javascript:void(0)" onclick="showTab('locations', event)" role="tab" aria-selected="false" aria-controls="locations-panel">📍 Location</a>
@@ -374,12 +363,6 @@
         }
 
         function updateMetrics(stats) {
-            document.getElementById('totalEmployees').textContent = stats.total_employees || '-';
-            document.getElementById('benchCount').textContent = stats.bench_count || '-';
-            document.getElementById('benchPercentage').textContent = (stats.bench_percentage || 0) + '%';
-            document.getElementById('avgExperience').textContent = (stats.avg_experience || 0).toFixed(1) + ' yrs';
-            
-            document.getElementById('keyMetrics').style.display = 'block';
             document.getElementById('categoryFilterSection').style.display = 'block';
             document.getElementById('analyticsSection').style.display = 'block';
             
