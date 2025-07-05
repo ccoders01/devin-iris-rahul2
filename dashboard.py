@@ -77,7 +77,7 @@ class BenchAnalyticsDashboard:
                 dbc.Tab(label="Overview", tab_id="overview"),
                 dbc.Tab(label="Bench Analysis", tab_id="bench"),
                 dbc.Tab(label="Skills Analysis", tab_id="skills"),
-                dbc.Tab(label="Demographics", tab_id="demographics"),
+                dbc.Tab(label="Trends", tab_id="trends"),
                 dbc.Tab(label="Data Table", tab_id="data")
             ], id="tabs", active_tab="overview"),
             
@@ -178,8 +178,8 @@ class BenchAnalyticsDashboard:
                 return self.create_bench_tab(df)
             elif active_tab == "skills":
                 return self.create_skills_tab(df)
-            elif active_tab == "demographics":
-                return self.create_demographics_tab(df)
+            elif active_tab == "trends":
+                return self.create_trends_tab(df)
             elif active_tab == "data":
                 return self.create_data_tab(df)
             
@@ -238,20 +238,49 @@ class BenchAnalyticsDashboard:
             dbc.Col([dcc.Graph(figure=fig2)], width=6)
         ])
     
-    def create_demographics_tab(self, df):
-        if 'Gender' in df.columns:
-            fig1 = px.pie(df, names='Gender', title='Gender Distribution')
+    def create_trends_tab(self, df):
+        if 'Actual Ageing Slab' in df.columns:
+            slab_counts = df['Actual Ageing Slab'].value_counts()
+            
+            slab_order = ['0-1 Wks', '1-2 Wks', '2-3 Wks', '3-4 Wks', '4-5 Wks', '5-6 Wks', 
+                         '6-7 Wks', '7-8 Wks', '8-9 Wks', '9-10 Wks', '10-11 Wks', '11-12 Wks',
+                         '12-13 Wks', '13-14 Wks', '14-15 Wks', '15-16 Wks', '16-18 Wks', 
+                         '18-20 Wks', '20-22 Wks', '22-24 Wks', '24-25 Wks', '>25 Wks']
+            
+            cumulative_counts = []
+            cumulative_total = 0
+            x_labels = []
+            
+            for slab in slab_order:
+                if slab in slab_counts.index:
+                    cumulative_total += slab_counts[slab]
+                    cumulative_counts.append(cumulative_total)
+                    x_labels.append(slab)
+            
+            fig = go.Figure(data=[go.Scatter(
+                x=x_labels, 
+                y=cumulative_counts,
+                mode='lines+markers',
+                line=dict(width=3, color='#1f77b4'),
+                marker=dict(size=8, color='#1f77b4'),
+                fill='tonexty',
+                fillcolor='rgba(31, 119, 180, 0.1)'
+            )])
+            
+            fig.update_layout(
+                title="Cumulative Ageing Trends by Week Slabs", 
+                height=500,
+                xaxis_title="Ageing Slab",
+                yaxis_title="Cumulative Employee Count",
+                xaxis=dict(tickangle=45),
+                showlegend=False
+            )
         else:
-            fig1 = go.Figure()
-        
-        if 'Level' in df.columns:
-            fig2 = px.bar(df['Level'].value_counts(), title='Level Distribution')
-        else:
-            fig2 = go.Figure()
+            fig = go.Figure()
+            fig.update_layout(title='Ageing Trends - Actual Ageing Slab Column Not Found', height=500)
         
         return dbc.Row([
-            dbc.Col([dcc.Graph(figure=fig1)], width=6),
-            dbc.Col([dcc.Graph(figure=fig2)], width=6)
+            dbc.Col([dcc.Graph(figure=fig)], width=12)
         ])
     
     def create_data_tab(self, df):

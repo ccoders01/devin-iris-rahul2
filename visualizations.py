@@ -13,43 +13,47 @@ class BenchAnalyticsVisualizer:
         plt.style.use('default')
         sns.set_palette("husl")
         
-    def create_employee_demographics_chart(self, save_path=None):
+    def create_employee_trends_chart(self, save_path=None):
         if self.df is None or len(self.df) == 0:
             return None
             
-        fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-        fig.suptitle('Employee Demographics Analysis', fontsize=16, fontweight='bold')
+        fig, ax = plt.subplots(1, 1, figsize=(15, 8))
+        fig.suptitle('Cumulative Ageing Trends by Week Slabs', fontsize=16, fontweight='bold')
         
-        if 'Gender' in self.df.columns:
-            gender_counts = self.df['Gender'].value_counts()
-            axes[0, 0].pie(gender_counts.values, labels=gender_counts.index, autopct='%1.1f%%', startangle=90)
-            axes[0, 0].set_title('Gender Distribution')
-        
-        if 'Level' in self.df.columns:
-            level_counts = self.df['Level'].value_counts()
-            axes[0, 1].bar(level_counts.index, level_counts.values, color='skyblue')
-            axes[0, 1].set_title('Employee Level Distribution')
-            axes[0, 1].set_xlabel('Level')
-            axes[0, 1].set_ylabel('Count')
-        
-        if 'Location' in self.df.columns:
-            location_counts = self.df['Location'].value_counts().head(10)
-            axes[1, 0].barh(location_counts.index, location_counts.values, color='lightgreen')
-            axes[1, 0].set_title('Top 10 Locations')
-            axes[1, 0].set_xlabel('Count')
-        
-        if 'Total Experience' in self.df.columns:
-            exp_data = pd.to_numeric(self.df['Total Experience'], errors='coerce').dropna()
-            axes[1, 1].hist(exp_data, bins=20, color='orange', alpha=0.7, edgecolor='black')
-            axes[1, 1].set_title('Experience Distribution')
-            axes[1, 1].set_xlabel('Years of Experience')
-            axes[1, 1].set_ylabel('Frequency')
+        if 'Actual Ageing Slab' in self.df.columns:
+            slab_counts = self.df['Actual Ageing Slab'].value_counts()
+            
+            slab_order = ['0-1 Wks', '1-2 Wks', '2-3 Wks', '3-4 Wks', '4-5 Wks', '5-6 Wks', 
+                         '6-7 Wks', '7-8 Wks', '8-9 Wks', '9-10 Wks', '10-11 Wks', '11-12 Wks',
+                         '12-13 Wks', '13-14 Wks', '14-15 Wks', '15-16 Wks', '16-18 Wks', 
+                         '18-20 Wks', '20-22 Wks', '22-24 Wks', '24-25 Wks', '>25 Wks']
+            
+            cumulative_counts = []
+            cumulative_total = 0
+            x_labels = []
+            
+            for slab in slab_order:
+                if slab in slab_counts.index:
+                    cumulative_total += slab_counts[slab]
+                    cumulative_counts.append(cumulative_total)
+                    x_labels.append(slab)
+            
+            ax.plot(x_labels, cumulative_counts, marker='o', linewidth=3, markersize=8, color='#1f77b4')
+            ax.fill_between(x_labels, cumulative_counts, alpha=0.3, color='#1f77b4')
+            ax.set_title('Cumulative Ageing Trends by Week Slabs')
+            ax.set_xlabel('Ageing Slab')
+            ax.set_ylabel('Cumulative Employee Count')
+            ax.tick_params(axis='x', rotation=45)
+            ax.grid(True, alpha=0.3)
+        else:
+            ax.text(0.5, 0.5, 'Actual Ageing Slab data not available', ha='center', va='center', transform=ax.transAxes)
+            ax.set_title('Ageing Trends - No Data Available')
         
         plt.tight_layout()
         
         if save_path:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
-            print(f"Demographics chart saved to: {save_path}")
+            print(f"Trends chart saved to: {save_path}")
         
         return fig
     

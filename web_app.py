@@ -153,7 +153,7 @@ class BenchAnalyticsWebApp:
                         html.P("This application analyzes workforce bench capacity data with 152 columns covering:", 
                                className="text-center"),
                         html.Ul([
-                            html.Li("Employee Demographics & Information"),
+                            html.Li("Employee Trends & Information"),
                             html.Li("Project Allocation & Loading"),
                             html.Li("Skills & Training Analysis"),
                             html.Li("Bench Management & Ageing"),
@@ -205,7 +205,7 @@ class BenchAnalyticsWebApp:
             
             dbc.Tabs([
                 dbc.Tab(label="📈 Overview", tab_id="overview"),
-                dbc.Tab(label="👥 Demographics", tab_id="demographics"),
+                dbc.Tab(label="📈 Trends", tab_id="trends"),
                 dbc.Tab(label="🏢 Bench Analysis", tab_id="bench"),
                 dbc.Tab(label="🎯 Skills", tab_id="skills"),
                 dbc.Tab(label="📍 Locations", tab_id="locations"),
@@ -238,32 +238,55 @@ class BenchAnalyticsWebApp:
             ], width=6)
         ])
     
-    def create_demographics_tab(self):
+    def create_trends_tab(self):
         if not self.processor or self.current_data is None:
             return html.Div("No data available")
         
         df = self.current_data
         
-        gender_counts = df['Gender'].value_counts()
-        fig_gender = px.pie(values=gender_counts.values, names=gender_counts.index,
-                           title="Gender Distribution")
-        
-        level_counts = df['Level'].value_counts()
-        fig_level = px.bar(x=level_counts.index, y=level_counts.values,
-                          title="Employee Level Distribution")
-        
-        fig_experience = px.histogram(df, x='Total Experience', nbins=20,
-                                     title="Experience Distribution")
+        if 'Actual Ageing Slab' in df.columns:
+            slab_counts = df['Actual Ageing Slab'].value_counts()
+            
+            slab_order = ['0-1 Wks', '1-2 Wks', '2-3 Wks', '3-4 Wks', '4-5 Wks', '5-6 Wks', 
+                         '6-7 Wks', '7-8 Wks', '8-9 Wks', '9-10 Wks', '10-11 Wks', '11-12 Wks',
+                         '12-13 Wks', '13-14 Wks', '14-15 Wks', '15-16 Wks', '16-18 Wks', 
+                         '18-20 Wks', '20-22 Wks', '22-24 Wks', '24-25 Wks', '>25 Wks']
+            
+            cumulative_counts = []
+            cumulative_total = 0
+            x_labels = []
+            
+            for slab in slab_order:
+                if slab in slab_counts.index:
+                    cumulative_total += slab_counts[slab]
+                    cumulative_counts.append(cumulative_total)
+                    x_labels.append(slab)
+            
+            fig = go.Figure(data=[go.Scatter(
+                x=x_labels, 
+                y=cumulative_counts,
+                mode='lines+markers',
+                line=dict(width=3, color='#1f77b4'),
+                marker=dict(size=8, color='#1f77b4'),
+                fill='tonexty',
+                fillcolor='rgba(31, 119, 180, 0.1)'
+            )])
+            
+            fig.update_layout(
+                title="Cumulative Ageing Trends by Week Slabs", 
+                height=500,
+                xaxis_title="Ageing Slab",
+                yaxis_title="Cumulative Employee Count",
+                xaxis=dict(tickangle=45),
+                showlegend=False
+            )
+        else:
+            fig = go.Figure()
+            fig.update_layout(title='Ageing Trends - Actual Ageing Slab Column Not Found', height=500)
         
         return dbc.Row([
             dbc.Col([
-                dcc.Graph(figure=fig_gender)
-            ], width=6),
-            dbc.Col([
-                dcc.Graph(figure=fig_level)
-            ], width=6),
-            dbc.Col([
-                dcc.Graph(figure=fig_experience)
+                dcc.Graph(figure=fig)
             ], width=12)
         ])
     
@@ -374,8 +397,8 @@ class BenchAnalyticsWebApp:
         def render_tab_content(active_tab):
             if active_tab == "overview":
                 return self.create_overview_tab()
-            elif active_tab == "demographics":
-                return self.create_demographics_tab()
+            elif active_tab == "trends":
+                return self.create_trends_tab()
             elif active_tab == "bench":
                 return self.create_bench_tab()
             elif active_tab == "skills":

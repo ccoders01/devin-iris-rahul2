@@ -120,8 +120,8 @@ def get_analytics(chart_type):
     try:
         if chart_type == 'overview':
             return get_overview_charts(selected_categories)
-        elif chart_type == 'demographics':
-            return get_demographics_charts(selected_categories)
+        elif chart_type == 'trends':
+            return get_trends_charts(selected_categories)
         elif chart_type == 'bench':
             return get_bench_charts(selected_categories)
         elif chart_type == 'skills':
@@ -168,7 +168,7 @@ def get_overview_charts(selected_categories=None):
         ]
     })
 
-def get_demographics_charts(selected_categories=None):
+def get_trends_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
@@ -179,22 +179,49 @@ def get_demographics_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    gender_counts = df['Gender'].value_counts()
-    fig1 = go.Figure(data=[go.Pie(labels=gender_counts.index.tolist(), values=gender_counts.values.tolist())])
-    fig1.update_layout(title=f"Gender Distribution {category_text}", height=400)
-    
-    level_counts = df['Level'].value_counts()
-    fig2 = go.Figure(data=[go.Bar(x=level_counts.index.tolist(), y=level_counts.values.tolist())])
-    fig2.update_layout(title=f"Employee Level Distribution {category_text}", height=400)
-    
-    fig3 = go.Figure(data=[go.Histogram(x=df['Total Experience'], nbinsx=20)])
-    fig3.update_layout(title=f"Experience Distribution {category_text}", height=400)
+    if 'Actual Ageing Slab' in df.columns:
+        slab_counts = df['Actual Ageing Slab'].value_counts()
+        
+        slab_order = ['0-1 Wks', '1-2 Wks', '2-3 Wks', '3-4 Wks', '4-5 Wks', '5-6 Wks', 
+                     '6-7 Wks', '7-8 Wks', '8-9 Wks', '9-10 Wks', '10-11 Wks', '11-12 Wks',
+                     '12-13 Wks', '13-14 Wks', '14-15 Wks', '15-16 Wks', '16-18 Wks', 
+                     '18-20 Wks', '20-22 Wks', '22-24 Wks', '24-25 Wks', '>25 Wks']
+        
+        cumulative_counts = []
+        cumulative_total = 0
+        x_labels = []
+        
+        for slab in slab_order:
+            if slab in slab_counts.index:
+                cumulative_total += slab_counts[slab]
+                cumulative_counts.append(cumulative_total)
+                x_labels.append(slab)
+        
+        fig = go.Figure(data=[go.Scatter(
+            x=x_labels, 
+            y=cumulative_counts,
+            mode='lines+markers',
+            line=dict(width=3, color='#1f77b4'),
+            marker=dict(size=8, color='#1f77b4'),
+            fill='tonexty',
+            fillcolor='rgba(31, 119, 180, 0.1)'
+        )])
+        
+        fig.update_layout(
+            title=f"Cumulative Ageing Trends by Week Slabs {category_text}", 
+            height=500,
+            xaxis_title="Ageing Slab",
+            yaxis_title="Cumulative Employee Count",
+            xaxis=dict(tickangle=45),
+            showlegend=False
+        )
+    else:
+        fig = go.Figure()
+        fig.update_layout(title=f"Ageing Trends - Actual Ageing Slab Column Not Found {category_text}", height=500)
     
     return jsonify({
         'charts': [
-            {'id': 'gender_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
-            {'id': 'level_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))},
-            {'id': 'experience_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig3))}
+            {'id': 'trends_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
         ]
     })
 
@@ -373,12 +400,11 @@ def drill_down():
         'status_chart': 'Status',
         'location_chart': 'Location',
         'region_chart': 'Location', 
-        'gender_chart': 'Gender',
-        'level_chart': 'Level',
         'bench_category_chart': 'Bench Category',
         'skills_chart': 'Tech1 Primary Skill',
         'rag_chart': 'Associate RAG Status',
-        'ageing_chart': 'Actual Ageing'
+        'ageing_chart': 'Actual Ageing',
+        'trends_chart': 'Actual Ageing Slab'
     }
     
     try:
