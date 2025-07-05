@@ -501,6 +501,12 @@
                         displayModeBar: false,
                         showTips: true
                     }).then(function() {
+                        // Remove loading overlay after chart is successfully rendered
+                        const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
+                        if (loadingOverlay) {
+                            loadingOverlay.remove();
+                        }
+                        
                         // Add click event listener after plot is created
                         const plotElement = document.getElementById(chart.id);
                         
@@ -520,6 +526,14 @@
                         console.log('Click handler attached to chart:', chart.id);
                     }).catch(function(error) {
                         console.error('Error creating plot:', chart.id, error);
+                        // Remove loading overlay even on error
+                        const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
+                        if (loadingOverlay) {
+                            loadingOverlay.remove();
+                        }
+                        // Show error message in chart container
+                        document.getElementById(chart.id).innerHTML = 
+                            `<div class="alert alert-danger">Failed to load chart: ${error.message}</div>`;
                     });
                 });
             })
