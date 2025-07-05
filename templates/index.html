@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bench Analytics Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+        
+        .chart-container {
+            margin: 20px 0;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: white;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .chart-container:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin: 10px 0;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            pointer-events: none;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            background-color: var(--light-bg);
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(102, 126, 234, 0.05);
+            transform: translateY(-2px);
+        }
+        
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 5px;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        
+        .nav-pills .nav-link.active {
+            background-color: var(--primary-color);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .nav-pills .nav-link:hover:not(.active) {
+            background-color: rgba(102, 126, 234, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: var(--transition);
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color) 0%, #20c997 100%);
+            box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        
+        .btn-outline-primary:hover,
+        .btn-outline-primary:focus,
+        .btn-outline-primary:active {
+            background-color: transparent !important;
+            border-color: var(--primary-color) !important;
+            color: var(--primary-color) !important;
+        }
+        
+        .btn-outline-secondary:hover,
+        .btn-outline-secondary:focus,
+        .btn-outline-secondary:active {
+            background-color: transparent !important;
+            border-color: #6c757d !important;
+            color: #6c757d !important;
+        }
+        
+        .card {
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, var(--light-bg) 0%, #e9ecef 100%);
+            border-bottom: 1px solid var(--border-color);
+            border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+            font-weight: 600;
+        }
+        
+        .form-select, .form-control {
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+        
+        .form-select:focus, .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .alert {
+            border-radius: var(--border-radius);
+            border: none;
+            box-shadow: var(--shadow);
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--border-radius);
+            z-index: 1000;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-card {
+                margin: 15px 0;
+                padding: 20px;
+            }
+            
+            .chart-container {
+                padding: 15px;
+                margin: 15px 0;
+            }
+            
+            .upload-area {
+                padding: 30px 20px;
+            }
+            
+            .nav-pills .nav-link {
+                margin: 2px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row bg-primary text-white py-3 mb-4">
+            <div class="col">
+                <h1 class="mb-0">🎯 Bench Analytics Dashboard</h1>
+                <p class="mb-0">Comprehensive workforce analytics for 152-column bench capacity data</p>
+            </div>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="upload-area">
+                    <h4>📁 Upload Excel File</h4>
+                    <p>Upload your bench capacity Excel file (.xlsx)</p>
+                    <input type="file" id="fileInput" accept=".xlsx" class="form-control mb-3" aria-label="Upload Excel file">
+                    <button onclick="uploadFile()" class="btn btn-primary" aria-label="Upload and analyze Excel file">Upload & Analyze</button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="upload-area">
+                    <h4>📊 Load Real Excel Data</h4>
+                    <p>Load actual bench capacity data (975 employees)</p>
+                    <button onclick="generateSample()" class="btn btn-success">Load Real Excel Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Filter Section -->
+        <div id="categoryFilterSection" class="row mb-4" style="display: none;">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">📊 Filter by Employee Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <select id="categoryFilter" class="form-select" multiple size="6">
+                                    <option value="Billable">Billable (868 employees)</option>
+                                    <option value="Bench">Bench (50 employees)</option>
+                                    <option value="Proposed">Proposed (18 employees)</option>
+                                    <option value="Management">Management (14 employees)</option>
+                                    <option value="On-Boarding">On-Boarding (7 employees)</option>
+                                    <option value="Soft Lock">Soft Lock (2 employees)</option>
+                                    <option value="Delivery Investment">Delivery Investment (2 employees)</option>
+                                    <option value="Relationship Investment">Relationship Investment (2 employees)</option>
+                                    <option value="Reserved">Reserved (2 employees)</option>
+                                    <option value="Transition">Transition (1 employee)</option>
+                                </select>
+                                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple categories. All categories selected by default.</small>
+                            </div>
+                            <div class="col-md-4">
+                                <button onclick="selectAllCategories()" class="btn btn-outline-primary btn-sm mb-2 w-100">Select All</button>
+                                <button onclick="clearAllCategories()" class="btn btn-outline-secondary btn-sm mb-2 w-100">Clear All</button>
+                                <button onclick="applyFilter()" class="btn btn-primary w-100">Apply Filter</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Messages -->
+        <div id="statusMessage" class="alert" style="display: none;"></div>
+
+
+        <!-- Analytics Tabs -->
+        <div id="analyticsSection" style="display: none;">
+            <ul class="nav nav-pills mb-3" id="analyticsTabs" role="tablist" aria-label="Analytics navigation">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" href="javascript:void(0)" onclick="showTab('overview', event)" role="tab" aria-selected="true" aria-controls="overview-panel">📊 Overview</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('ageing', event)" role="tab" aria-selected="false" aria-controls="ageing-panel">⏰ Ageing</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('trends', event)" role="tab" aria-selected="false" aria-controls="trends-panel">📈 Trends</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('opportunities', event)" role="tab" aria-selected="false" aria-controls="opportunities-panel">🎯 Opportunities</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('skills', event)" role="tab" aria-selected="false" aria-controls="skills-panel">📚 Trainings</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('locations', event)" role="tab" aria-selected="false" aria-controls="locations-panel">📍 Location</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('bench_source', event)" role="tab" aria-selected="false" aria-controls="bench_source-panel">🏗️ Bench Source</a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('data', event)" role="tab" aria-selected="false" aria-controls="data-panel">📋 Data Preview</a>
+                </li>
+            </ul>
+
+            <!-- Tab Content -->
+            <div id="tabContent">
+                <div id="loadingSpinner" class="text-center py-5" style="display: none;">
+                    <div class="loading-overlay">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3 mb-0 fw-medium">Loading analytics...</p>
+                            <small class="text-muted">Please wait while we process your data</small>
+                        </div>
+                    </div>
+                </div>
+                <div id="chartsContainer"></div>
+                <div id="dataContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentTab = 'overview';
+        let selectedCategories = ['Billable', 'Bench', 'Proposed', 'Management', 'On-Boarding', 'Soft Lock', 'Delivery Investment', 'Relationship Investment', 'Reserved', 'Transition'];
+
+        function showMessage(message, type = 'info') {
+            const messageDiv = document.getElementById('statusMessage');
+            messageDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            
+            let icon = '';
+            switch(type) {
+                case 'success': icon = '✅'; break;
+                case 'danger': icon = '❌'; break;
+                case 'warning': icon = '⚠️'; break;
+                default: icon = 'ℹ️'; break;
+            }
+            
+            messageDiv.innerHTML = `
+                ${icon} ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            messageDiv.style.display = 'block';
+            
+            if (type !== 'danger') {
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function updateMetrics(stats) {
+            document.getElementById('categoryFilterSection').style.display = 'block';
+            document.getElementById('analyticsSection').style.display = 'block';
+            
+            setTimeout(initializeCategoryFilter, 100);
+        }
+
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showMessage('Please select a file to upload', 'warning');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showMessage('Uploading and processing file...', 'info');
+
+            fetch(window.location.origin + '/upload', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    updateMetrics(data.stats);
+                    showTab(currentTab);
+                } else {
+                    showMessage(data.error, 'danger');
+                }
+            })
+            .catch(error => {
+                showMessage('Upload failed: ' + error.message, 'danger');
+            });
+        }
+
+        function generateSample() {
+            showMessage('Generating sample data...', 'info');
+
+            fetch(window.location.origin + '/generate_sample', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    updateMetrics(data.stats);
+                    showTab(currentTab);
+                } else {
+                    showMessage(data.error, 'danger');
+                }
+            })
+            .catch(error => {
+                showMessage('Failed to load Excel data: ' + error.message, 'danger');
+            });
+        }
+
+        function showTab(tabName, event) {
+            if (event) {
+                event.preventDefault();
+            }
+            
+            currentTab = tabName;
+            
+            // Update active tab
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                link.setAttribute('aria-selected', 'false');
+            });
+            if (event && event.target) {
+                event.target.classList.add('active');
+                event.target.setAttribute('aria-selected', 'true');
+            }
+
+            // Clear content
+            document.getElementById('chartsContainer').innerHTML = '';
+            document.getElementById('dataContainer').innerHTML = '';
+            
+            if (tabName === 'data') {
+                loadDataPreview();
+            } else {
+                loadCharts(tabName);
+            }
+        }
+
+        function loadCharts(chartType) {
+            document.getElementById('loadingSpinner').style.display = 'block';
+
+            const categoryParams = selectedCategories.length > 0 ? `?categories=${encodeURIComponent(selectedCategories.join(','))}` : '';
+            fetch(window.location.origin + `/analytics/${chartType}${categoryParams}`, {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                
+                if (data.error) {
+                    showMessage(data.error, 'danger');
+                    return;
+                }
+
+                if (data.message) {
+                    document.getElementById('chartsContainer').innerHTML = 
+                        `<div class="alert alert-info">${data.message}</div>`;
+                    return;
+                }
+
+                const container = document.getElementById('chartsContainer');
+                container.innerHTML = '';
+
+                // Check if this is the overview tab with multiple charts for side-by-side layout
+                if (chartType === 'overview' && data.charts.length === 2) {
+                    // Create a row container for side-by-side layout
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'row';
+                    container.appendChild(rowDiv);
+                    
+                    data.charts.forEach((chart, index) => {
+                        // Create column wrapper for each chart
+                        const colDiv = document.createElement('div');
+                        colDiv.className = 'col-md-6';
+                        
+                        const chartDiv = document.createElement('div');
+                        chartDiv.className = 'chart-container position-relative';
+                        chartDiv.id = chart.id;
+                        chartDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border text-primary"></div></div>';
+                        
+                        colDiv.appendChild(chartDiv);
+                        rowDiv.appendChild(colDiv);
+                        
+                        Plotly.newPlot(chart.id, chart.data.data, chart.data.layout, {
+                            responsive: true,
+                            displayModeBar: false,
+                            showTips: true
+                        }).then(function() {
+                            // Remove loading overlay after chart is successfully rendered
+                            const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
+                            if (loadingOverlay) {
+                                loadingOverlay.remove();
+                            }
+                            
+                            // Add click event listener after plot is created
+                            const plotElement = document.getElementById(chart.id);
+                            
+                            // Remove any existing listeners first
+                            if (plotElement.removeAllListeners) {
+                                plotElement.removeAllListeners('plotly_click');
+                            }
+                            
+                            // Attach click event listener
+                            plotElement.on('plotly_click', function(eventData) {
+                                console.log('Chart clicked:', chart.id, eventData);
+                                if (eventData.points && eventData.points.length > 0) {
+                                    handleChartClick(chart.id, eventData.points[0]);
+                                }
+                            });
+                            
+                            console.log('Click handler attached to chart:', chart.id);
+                        }).catch(function(error) {
+                            console.error('Error creating plot:', chart.id, error);
+                            // Remove loading overlay even on error
+                            const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
+                            if (loadingOverlay) {
+                                loadingOverlay.remove();
+                            }
+                            // Show error message in chart container
+                            document.getElementById(chart.id).innerHTML = 
+                                `<div class="alert alert-danger">Failed to load chart: ${error.message}</div>`;
+                        });
+                    });
+                } else {
+                    // Default stacked layout for other tabs
+                    data.charts.forEach((chart, index) => {
+                        const chartDiv = document.createElement('div');
+                        chartDiv.className = 'chart-container position-relative';
+                        chartDiv.id = chart.id;
+                        chartDiv.innerHTML = '<div class="loading-overlay"><div class="spinner-border text-primary"></div></div>';
+                        container.appendChild(chartDiv);
+
+                        Plotly.newPlot(chart.id, chart.data.data, chart.data.layout, {
+                            responsive: true,
+                            displayModeBar: false,
+                            showTips: true
+                        }).then(function() {
+                            // Remove loading overlay after chart is successfully rendered
+                            const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
+                            if (loadingOverlay) {
+                                loadingOverlay.remove();
+                            }
+                            
+                            // Add click event listener after plot is created
+                            const plotElement = document.getElementById(chart.id);
+                            
+                            // Remove any existing listeners first
+                            if (plotElement.removeAllListeners) {
+                                plotElement.removeAllListeners('plotly_click');
+                            }
+                            
+                            // Attach click event listener
+                            plotElement.on('plotly_click', function(eventData) {
+                                console.log('Chart clicked:', chart.id, eventData);
+                                if (eventData.points && eventData.points.length > 0) {
+                                    handleChartClick(chart.id, eventData.points[0]);
+                                }
+                            });
+                            
+                            console.log('Click handler attached to chart:', chart.id);
+                        }).catch(function(error) {
+                            console.error('Error creating plot:', chart.id, error);
+                            // Remove loading overlay even on error
+                            const loadingOverlay = document.getElementById(chart.id).querySelector('.loading-overlay');
+                            if (loadingOverlay) {
+                                loadingOverlay.remove();
+                            }
+                            // Show error message in chart container
+                            document.getElementById(chart.id).innerHTML = 
+                                `<div class="alert alert-danger">Failed to load chart: ${error.message}</div>`;
+                        });
+                    });
+                }
+            })
+            .catch(error => {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                showMessage('Failed to load charts: ' + error.message, 'danger');
+            });
+        }
+
+        function loadDataPreview() {
+            document.getElementById('loadingSpinner').style.display = 'block';
+
+            const categoryParams = selectedCategories.length > 0 ? `?categories=${encodeURIComponent(selectedCategories.join(','))}` : '';
+            fetch(window.location.origin + `/data_preview${categoryParams}`, {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                
+                if (data.error) {
+                    showMessage(data.error, 'danger');
+                    return;
+                }
+
+                let tableHTML = `
+                    <div class="chart-container">
+                        <h4>Data Preview (First 100 rows of ${data.total_rows} total)</h4>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                `;
+
+                data.columns.forEach(col => {
+                    tableHTML += `<th>${col}</th>`;
+                });
+
+                tableHTML += `</tr></thead><tbody>`;
+
+                data.data.forEach(row => {
+                    tableHTML += '<tr>';
+                    data.columns.forEach(col => {
+                        tableHTML += `<td>${row[col] || ''}</td>`;
+                    });
+                    tableHTML += '</tr>';
+                });
+
+                tableHTML += `</tbody></table></div></div>`;
+
+                document.getElementById('dataContainer').innerHTML = tableHTML;
+            })
+            .catch(error => {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                showMessage('Failed to load data preview: ' + error.message, 'danger');
+            });
+        }
+
+
+        function handleChartClick(chartId, point) {
+            let filterValue, additionalFilter;
+            
+            // Determine filter value based on chart type
+            if (chartId.includes('_chart')) {
+                if (point.label !== undefined) {
+                    // Pie charts use point.label
+                    filterValue = point.label;
+                } else if (point.x !== undefined) {
+                    // Bar charts use point.x
+                    filterValue = point.x;
+                    // For stacked bar charts, also get the series name
+                    if (chartId === 'location_status_chart' && point.data && point.data.name) {
+                        additionalFilter = point.data.name;
+                    }
+                }
+            }
+            
+            if (filterValue) {
+                showDrillDownModal(chartId, filterValue, additionalFilter);
+            }
+        }
+        
+        function showDrillDownModal(chartId, filterValue, additionalFilter) {
+            // Store current context
+            currentChartId = chartId;
+            currentFilterValue = filterValue;
+            currentAdditionalFilter = additionalFilter;
+            
+            // Show modal with loading state
+            const modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
+            const modalTitle = document.getElementById('drillDownModalLabel');
+            const modalContent = document.getElementById('drillDownContent');
+            
+            // Set title based on filter
+            let title = `Employees: ${filterValue}`;
+            if (additionalFilter) {
+                title += ` (${additionalFilter})`;
+            }
+            modalTitle.textContent = title;
+            
+            // Reset grid state
+            gridConfig.currentPage = 1;
+            
+            // Show loading spinner
+            modalContent.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            `;
+            
+            modal.show();
+            
+            // Setup event listeners for configuration controls
+            setupConfigurationEventListeners();
+            
+            // Load initial data
+            refreshGrid();
+        }
+        
+        function setupConfigurationEventListeners() {
+            // Search input with debounce
+            const searchInput = document.getElementById('gridSearch');
+            searchInput.removeEventListener('input', searchHandler);
+            searchInput.addEventListener('input', searchHandler);
+            
+            // Page size selector
+            const pageSizeSelect = document.getElementById('gridPageSize');
+            pageSizeSelect.removeEventListener('change', pageSizeHandler);
+            pageSizeSelect.addEventListener('change', pageSizeHandler);
+        }
+        
+        const searchHandler = debounce(function(e) {
+            gridConfig.searchTerm = e.target.value;
+            gridConfig.currentPage = 1;
+            refreshGrid();
+        }, 300);
+        
+        function pageSizeHandler(e) {
+            gridConfig.pageSize = parseInt(e.target.value);
+            gridConfig.currentPage = 1;
+            saveGridPreferences();
+            refreshGrid();
+        }
+        
+        // Grid configuration state
+        let gridConfig = {
+            currentPage: 1,
+            pageSize: 25,
+            sortColumn: 'Employee Name',
+            sortDirection: 'asc',
+            searchTerm: '',
+            visibleColumns: [],
+            allColumns: []
+        };
+        
+        // Global variables to track current drill-down context
+        let currentChartId, currentFilterValue, currentAdditionalFilter;
+        
+        function renderConfigurableGrid(data, container) {
+            if (!data.success) {
+                container.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            const employees = data.data;
+            const columns = data.columns;
+            const availableColumns = data.available_columns || columns;
+            gridConfig.allColumns = availableColumns;
+            
+            // Load saved preferences
+            loadGridPreferences();
+            
+            // Setup column visibility controls
+            setupColumnControls(availableColumns);
+            
+            // Render the grid
+            renderGridTable(employees, columns, container);
+            
+            // Setup pagination
+            setupPagination(data);
+            
+            // Show pagination controls
+            document.getElementById('gridPagination').style.display = 'flex';
+        }
+        
+        function renderGridTable(employees, columns, container) {
+            if (employees.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No employees found for this filter.</div>';
+                return;
+            }
+            
+            const visibleCols = gridConfig.visibleColumns.length > 0 ? 
+                gridConfig.visibleColumns.filter(col => columns.includes(col)) : columns;
+            
+            let tableHtml = `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                ${visibleCols.map(col => `
+                                    <th class="sortable-header" data-column="${col}" style="cursor: pointer;">
+                                        ${col}
+                                        <span class="sort-indicator">
+                                            ${gridConfig.sortColumn === col ? 
+                                              (gridConfig.sortDirection === 'asc' ? ' ↑' : ' ↓') : ' ↕'}
+                                        </span>
+                                    </th>
+                                `).join('')}
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            employees.forEach(employee => {
+                tableHtml += '<tr>';
+                visibleCols.forEach(col => {
+                    const value = employee[col] || '';
+                    tableHtml += `<td>${value}</td>`;
+                });
+                tableHtml += '</tr>';
+            });
+            
+            tableHtml += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = tableHtml;
+            
+            // Add click handlers for sorting
+            container.querySelectorAll('.sortable-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const column = header.dataset.column;
+                    handleSort(column);
+                });
+            });
+        }
+        
+        function setupColumnControls(columns) {
+            const dropdown = document.getElementById('columnDropdown');
+            dropdown.innerHTML = columns.map(col => `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="${col}" id="col_${col.replace(/\s+/g, '_')}" 
+                           ${gridConfig.visibleColumns.length === 0 || gridConfig.visibleColumns.includes(col) ? 'checked' : ''}>
+                    <label class="form-check-label small" for="col_${col.replace(/\s+/g, '_')}">
+                        ${col}
+                    </label>
+                </div>
+            `).join('');
+            
+            // Add event listeners
+            dropdown.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', handleColumnVisibility);
+            });
+        }
+        
+        function handleColumnVisibility() {
+            const checkboxes = document.querySelectorAll('#columnDropdown input[type="checkbox"]');
+            gridConfig.visibleColumns = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+            
+            saveGridPreferences();
+            refreshGrid();
+        }
+        
+        function handleSort(column) {
+            if (gridConfig.sortColumn === column) {
+                gridConfig.sortDirection = gridConfig.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                gridConfig.sortColumn = column;
+                gridConfig.sortDirection = 'asc';
+            }
+            
+            saveGridPreferences();
+            refreshGrid();
+        }
+        
+        function setupPagination(data) {
+            const info = document.getElementById('gridInfo');
+            const controls = document.getElementById('paginationControls');
+            
+            const start = (data.page - 1) * data.page_size + 1;
+            const end = Math.min(data.page * data.page_size, data.total_count);
+            
+            info.textContent = `Showing ${start}-${end} of ${data.total_count} employees`;
+            
+            // Generate pagination controls
+            let paginationHtml = '';
+            
+            // Previous button
+            paginationHtml += `
+                <li class="page-item ${data.page === 1 ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${data.page - 1})">Previous</a>
+                </li>
+            `;
+            
+            // Page numbers
+            const maxPages = Math.min(5, data.total_pages);
+            const startPage = Math.max(1, data.page - Math.floor(maxPages / 2));
+            const endPage = Math.min(data.total_pages, startPage + maxPages - 1);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `
+                    <li class="page-item ${i === data.page ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                    </li>
+                `;
+            }
+            
+            // Next button
+            paginationHtml += `
+                <li class="page-item ${data.page === data.total_pages ? 'disabled' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${data.page + 1})">Next</a>
+                </li>
+            `;
+            
+            controls.innerHTML = paginationHtml;
+        }
+        
+        function changePage(page) {
+            gridConfig.currentPage = page;
+            refreshGrid();
+        }
+        
+        function refreshGrid() {
+            const params = new URLSearchParams({
+                chart_id: currentChartId,
+                filter_value: currentFilterValue,
+                sort_column: gridConfig.sortColumn,
+                sort_direction: gridConfig.sortDirection,
+                page: gridConfig.currentPage,
+                page_size: gridConfig.pageSize,
+                visible_columns: gridConfig.visibleColumns.join(','),
+                search_term: gridConfig.searchTerm
+            });
+            
+            if (currentAdditionalFilter) {
+                params.append('additional_filter', currentAdditionalFilter);
+            }
+            
+            if (selectedCategories.length > 0) {
+                params.append('categories', selectedCategories.join(','));
+            }
+            
+            fetch(window.location.origin + `/drill_down?${params}`, {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('drillDownContent');
+                renderConfigurableGrid(data, container);
+            })
+            .catch(error => {
+                console.error('Grid refresh failed:', error);
+            });
+        }
+        
+        // Export functions
+        function exportGrid(format) {
+            const params = new URLSearchParams({
+                chart_id: currentChartId,
+                filter_value: currentFilterValue,
+                sort_column: gridConfig.sortColumn,
+                sort_direction: gridConfig.sortDirection,
+                page: 1,
+                page_size: 10000,
+                visible_columns: gridConfig.visibleColumns.join(','),
+                search_term: gridConfig.searchTerm,
+                export_format: format
+            });
+            
+            if (currentAdditionalFilter) {
+                params.append('additional_filter', currentAdditionalFilter);
+            }
+            
+            if (selectedCategories.length > 0) {
+                params.append('categories', selectedCategories.join(','));
+            }
+            
+            // Create download link
+            const url = window.location.origin + `/drill_down?${params}`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `employees_${currentFilterValue}_${new Date().toISOString().split('T')[0]}.${format}`;
+            link.click();
+        }
+        
+        // Preferences management
+        function saveGridPreferences() {
+            localStorage.setItem('benchAnalyticsGridConfig', JSON.stringify(gridConfig));
+        }
+        
+        function loadGridPreferences() {
+            const saved = localStorage.getItem('benchAnalyticsGridConfig');
+            if (saved) {
+                const savedConfig = JSON.parse(saved);
+                gridConfig = { ...gridConfig, ...savedConfig };
+                
+                // Update UI controls
+                document.getElementById('gridSearch').value = gridConfig.searchTerm;
+                document.getElementById('gridPageSize').value = gridConfig.pageSize;
+            }
+        }
+        
+        function resetGridConfig() {
+            gridConfig = {
+                currentPage: 1,
+                pageSize: 25,
+                sortColumn: 'Employee Name',
+                sortDirection: 'asc',
+                searchTerm: '',
+                visibleColumns: [],
+                allColumns: gridConfig.allColumns
+            };
+            
+            localStorage.removeItem('benchAnalyticsGridConfig');
+            
+            // Reset UI controls
+            document.getElementById('gridSearch').value = '';
+            document.getElementById('gridPageSize').value = '25';
+            
+            // Reset column checkboxes
+            document.querySelectorAll('#columnDropdown input[type="checkbox"]').forEach(cb => {
+                cb.checked = true;
+            });
+            
+            refreshGrid();
+        }
+        
+        // Debounce utility function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+
+    <!-- Drill-Down Modal -->
+    <div class="modal fade" id="drillDownModal" tabindex="-1" aria-labelledby="drillDownModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="drillDownModalLabel">Employee Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Configuration Panel -->
+                    <div id="gridConfigPanel" class="border-bottom pb-3 mb-3">
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label small">Search:</label>
+                                <input type="text" id="gridSearch" class="form-control form-control-sm" placeholder="Search employees...">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Page Size:</label>
+                                <select id="gridPageSize" class="form-select form-select-sm">
+                                    <option value="10">10</option>
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Columns:</label>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle w-100" type="button" id="columnToggle" data-bs-toggle="dropdown">
+                                        Manage Columns
+                                    </button>
+                                    <div class="dropdown-menu p-2" id="columnDropdown" style="min-width: 200px;">
+                                        <!-- Column checkboxes will be populated dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Export:</label>
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="exportGrid('csv')">CSV</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="exportGrid('excel')">Excel</button>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Reset:</label>
+                                <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="resetGridConfig()">Reset</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Grid Container -->
+                    <div id="drillDownContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="gridPagination" class="d-flex justify-content-between align-items-center mt-3" style="display: none !important;">
+                        <div class="text-muted small" id="gridInfo"></div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0" id="paginationControls"></ul>
+                        </nav>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectAllCategories() {
+            const select = document.getElementById('categoryFilter');
+            for (let option of select.options) {
+                option.selected = true;
+            }
+            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
+        }
+
+        function clearAllCategories() {
+            const select = document.getElementById('categoryFilter');
+            for (let option of select.options) {
+                option.selected = false;
+            }
+            selectedCategories = [];
+        }
+
+        function applyFilter() {
+            const select = document.getElementById('categoryFilter');
+            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
+            
+            if (selectedCategories.length === 0) {
+                showMessage('Please select at least one category to filter by', 'warning');
+                return;
+            }
+            
+            if (currentTab === 'data') {
+                loadDataPreview();
+            } else {
+                loadCharts(currentTab);
+            }
+            
+            showMessage(`Filter applied: ${selectedCategories.length} categories selected`, 'success');
+        }
+
+        function initializeCategoryFilter() {
+            const select = document.getElementById('categoryFilter');
+            for (let option of select.options) {
+                option.selected = true;
+            }
+            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
+        }
+        // Category management functions
+        function selectAllCategories() {
+            const select = document.getElementById('categoryFilter');
+            for (let option of select.options) {
+                option.selected = true;
+            }
+            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
+        }
+
+        function clearAllCategories() {
+            const select = document.getElementById('categoryFilter');
+            for (let option of select.options) {
+                option.selected = false;
+            }
+            selectedCategories = [];
+        }
+
+        function applyFilter() {
+            const select = document.getElementById('categoryFilter');
+            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
+            
+            if (selectedCategories.length === 0) {
+                showMessage('Please select at least one category to filter by', 'warning');
+                return;
+            }
+            
+            // Refresh current tab with new filter
+            if (currentTab === 'data') {
+                loadDataPreview();
+            } else {
+                loadCharts(currentTab);
+            }
+            
+            showMessage(`Filter applied: ${selectedCategories.length} categories selected`, 'success');
+        }
+
+        function initializeCategoryFilter() {
+            const select = document.getElementById('categoryFilter');
+            // Select all options by default
+            for (let option of select.options) {
+                option.selected = true;
+            }
+            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
+        }
+    </script>
+</body>
+</html>
