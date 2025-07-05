@@ -252,19 +252,17 @@ class BenchAnalyticsWebApp:
                          '12-13 Wks', '13-14 Wks', '14-15 Wks', '15-16 Wks', '16-18 Wks', 
                          '18-20 Wks', '20-22 Wks', '22-24 Wks', '24-25 Wks', '>25 Wks']
             
-            cumulative_counts = []
-            cumulative_total = 0
+            progression_counts = []
             x_labels = []
             
             for slab in slab_order:
                 if slab in slab_counts.index:
-                    cumulative_total += slab_counts[slab]
-                    cumulative_counts.append(cumulative_total)
+                    progression_counts.append(slab_counts[slab])
                     x_labels.append(slab)
             
             fig = go.Figure(data=[go.Scatter(
                 x=x_labels, 
-                y=cumulative_counts,
+                y=progression_counts,
                 mode='lines+markers',
                 line=dict(width=3, color='#1f77b4'),
                 marker=dict(size=8, color='#1f77b4'),
@@ -273,10 +271,10 @@ class BenchAnalyticsWebApp:
             )])
             
             fig.update_layout(
-                title="Cumulative Ageing Trends by Week Slabs", 
+                title="Employee Progression Through Ageing Slabs", 
                 height=500,
                 xaxis_title="Ageing Slab",
-                yaxis_title="Cumulative Employee Count",
+                yaxis_title="Employee Count",
                 xaxis=dict(tickangle=45),
                 showlegend=False
             )

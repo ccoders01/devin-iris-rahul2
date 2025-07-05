@@ -18,7 +18,7 @@ class BenchAnalyticsVisualizer:
             return None
             
         fig, ax = plt.subplots(1, 1, figsize=(15, 8))
-        fig.suptitle('Cumulative Ageing Trends by Week Slabs', fontsize=16, fontweight='bold')
+        fig.suptitle('Employee Progression Through Ageing Slabs', fontsize=16, fontweight='bold')
         
         if 'Actual Ageing Slab' in self.df.columns:
             slab_counts = self.df['Actual Ageing Slab'].value_counts()
@@ -28,21 +28,19 @@ class BenchAnalyticsVisualizer:
                          '12-13 Wks', '13-14 Wks', '14-15 Wks', '15-16 Wks', '16-18 Wks', 
                          '18-20 Wks', '20-22 Wks', '22-24 Wks', '24-25 Wks', '>25 Wks']
             
-            cumulative_counts = []
-            cumulative_total = 0
+            progression_counts = []
             x_labels = []
             
             for slab in slab_order:
                 if slab in slab_counts.index:
-                    cumulative_total += slab_counts[slab]
-                    cumulative_counts.append(cumulative_total)
+                    progression_counts.append(slab_counts[slab])
                     x_labels.append(slab)
             
-            ax.plot(x_labels, cumulative_counts, marker='o', linewidth=3, markersize=8, color='#1f77b4')
-            ax.fill_between(x_labels, cumulative_counts, alpha=0.3, color='#1f77b4')
-            ax.set_title('Cumulative Ageing Trends by Week Slabs')
+            ax.plot(x_labels, progression_counts, marker='o', linewidth=3, markersize=8, color='#1f77b4')
+            ax.fill_between(x_labels, progression_counts, alpha=0.3, color='#1f77b4')
+            ax.set_title('Employee Progression Through Ageing Slabs')
             ax.set_xlabel('Ageing Slab')
-            ax.set_ylabel('Cumulative Employee Count')
+            ax.set_ylabel('Employee Count')
             ax.tick_params(axis='x', rotation=45)
             ax.grid(True, alpha=0.3)
         else:
