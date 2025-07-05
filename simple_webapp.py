@@ -466,6 +466,22 @@ def drill_down():
             df = df[df['Location'] == filter_value]
             if additional_filter:
                 df = df[df['Status'] == additional_filter]
+        elif chart_id == 'projected_bench_chart':
+            try:
+                month_year = pd.to_datetime(filter_value, format='%b %Y')
+                
+                df['Planned ReleaseDate_parsed'] = pd.to_datetime(df['Planned ReleaseDate'], errors='coerce')
+                df = df[df['Planned ReleaseDate_parsed'].notna()]
+                
+                df = df[
+                    (df['Planned ReleaseDate_parsed'].dt.year == month_year.year) &
+                    (df['Planned ReleaseDate_parsed'].dt.month == month_year.month)
+                ]
+                
+                df = df.drop('Planned ReleaseDate_parsed', axis=1)
+                
+            except (ValueError, TypeError) as e:
+                df = df.iloc[0:0]
         else:
             column = chart_column_map.get(chart_id)
             if column and column in df.columns:
