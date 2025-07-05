@@ -181,6 +181,19 @@ class BenchAnalyticsProcessor:
                 if allocated_mask[i]:
                     sample_data['Planned ReleaseDate'][i] = np.random.choice(future_dates)
         
+        state_mapping = {
+            'Bangalore': 'Karnataka', 'Hyderabad': 'Telangana', 'Chennai': 'Tamil Nadu',
+            'Mumbai': 'Maharashtra', 'Pune': 'Maharashtra', 'Delhi': 'Delhi', 'Kolkata': 'West Bengal'
+        }
+        sample_data['State'] = [state_mapping.get(loc, 'Unknown') for loc in sample_data['Location']]
+        
+        sample_data['Available for Other BU'] = np.random.choice(['Yes', 'No', 'Under Review'], num_rows, p=[0.3, 0.5, 0.2])
+        
+        sample_data['Hired_Released'] = np.random.choice(['Hired', 'Released', 'Internal Transfer'], num_rows, p=[0.6, 0.3, 0.1])
+        
+        training_plans = ['Java Certification', 'Cloud Architecture', 'Data Science', 'DevOps', 'AI/ML', 'No Training', 'Leadership']
+        sample_data['Training Plan'] = np.random.choice(training_plans, num_rows)
+        
         for col in self.column_categories['employee_info'] + \
                    self.column_categories['location_info'] + \
                    self.column_categories['project_allocation'] + \

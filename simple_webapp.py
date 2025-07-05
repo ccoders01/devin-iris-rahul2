@@ -122,12 +122,14 @@ def get_analytics(chart_type):
             return get_overview_charts(selected_categories)
         elif chart_type == 'trends':
             return get_trends_charts(selected_categories)
-        elif chart_type == 'bench':
-            return get_bench_charts(selected_categories)
+        elif chart_type == 'opportunities':
+            return get_opportunities_charts(selected_categories)
         elif chart_type == 'skills':
             return get_skills_charts(selected_categories)
         elif chart_type == 'locations':
             return get_locations_charts(selected_categories)
+        elif chart_type == 'bench_source':
+            return get_bench_source_charts(selected_categories)
         elif chart_type == 'ageing':
             return get_ageing_charts(selected_categories)
         else:
@@ -257,7 +259,7 @@ def get_trends_charts(selected_categories=None):
         ]
     })
 
-def get_bench_charts(selected_categories=None):
+def get_opportunities_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
@@ -268,31 +270,17 @@ def get_bench_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    if 'Bench Category' in df.columns:
-        category_counts = df['Bench Category'].value_counts()
-        fig1 = go.Figure(data=[go.Pie(labels=category_counts.index.tolist(), values=category_counts.values.tolist())])
-        fig1.update_layout(title=f"Bench Category Distribution {category_text}", height=400)
+    if 'Available for Other BU' in df.columns:
+        opportunity_counts = df['Available for Other BU'].value_counts()
+        fig1 = go.Figure(data=[go.Pie(labels=opportunity_counts.index.tolist(), values=opportunity_counts.values.tolist())])
+        fig1.update_layout(title=f"Opportunities Distribution {category_text}", height=400)
     else:
         fig1 = go.Figure()
-        fig1.update_layout(title=f"Bench Category Distribution - No Data Available {category_text}", height=400)
-    
-    if 'Current Ageing' in df.columns:
-        ageing_ranges = {
-            '0-2 weeks': len(df[df['Current Ageing'] <= 14]),
-            '2-4 weeks': len(df[(df['Current Ageing'] > 14) & (df['Current Ageing'] <= 28)]),
-            '4-8 weeks': len(df[(df['Current Ageing'] > 28) & (df['Current Ageing'] <= 56)]),
-            '8+ weeks': len(df[df['Current Ageing'] > 56])
-        }
-        fig2 = go.Figure(data=[go.Bar(x=list(ageing_ranges.keys()), y=list(ageing_ranges.values()))])
-        fig2.update_layout(title=f"Bench Ageing Distribution {category_text}", height=400)
-    else:
-        fig2 = go.Figure()
-        fig2.update_layout(title=f"Bench Ageing Distribution - No Data Available {category_text}", height=400)
+        fig1.update_layout(title=f"Opportunities Distribution - No Data Available {category_text}", height=400)
     
     return jsonify({
         'charts': [
-            {'id': 'bench_category_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
-            {'id': 'bench_ageing_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
+            {'id': 'opportunities_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))}
         ]
     })
 
@@ -307,9 +295,13 @@ def get_skills_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    skill_counts = df['Tech1 Primary Skill'].value_counts().head(15)
-    fig1 = go.Figure(data=[go.Bar(x=skill_counts.index.tolist(), y=skill_counts.values.tolist())])
-    fig1.update_layout(title=f"Top 15 Primary Skills {category_text}", height=400)
+    if 'Training Plan' in df.columns:
+        training_counts = df['Training Plan'].value_counts()
+        fig1 = go.Figure(data=[go.Pie(labels=training_counts.index.tolist(), values=training_counts.values.tolist())])
+        fig1.update_layout(title=f"Training Plan Distribution {category_text}", height=400)
+    else:
+        fig1 = go.Figure()
+        fig1.update_layout(title=f"Training Plan Distribution - No Data Available {category_text}", height=400)
     
     rag_counts = df['Associate RAG Status'].value_counts()
     colors = {'Green': 'green', 'Amber': 'orange', 'Red': 'red'}
@@ -318,7 +310,7 @@ def get_skills_charts(selected_categories=None):
     
     return jsonify({
         'charts': [
-            {'id': 'skills_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
+            {'id': 'training_plan_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
             {'id': 'rag_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
         ]
     })
@@ -334,13 +326,42 @@ def get_locations_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    region_counts = df['Location'].value_counts().head(10)
-    fig = go.Figure(data=[go.Bar(x=region_counts.index.tolist(), y=region_counts.values.tolist())])
-    fig.update_layout(title=f"Top 10 Regions {category_text}", height=400)
+    if 'State' in df.columns:
+        state_counts = df['State'].value_counts()
+        fig = go.Figure(data=[go.Pie(labels=state_counts.index.tolist(), values=state_counts.values.tolist())])
+        fig.update_layout(title=f"Location Distribution by State {category_text}", height=400)
+    else:
+        fig = go.Figure()
+        fig.update_layout(title=f"Location Distribution - No State Data Available {category_text}", height=400)
     
     return jsonify({
         'charts': [
-            {'id': 'region_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+            {'id': 'location_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+        ]
+    })
+
+def get_bench_source_charts(selected_categories=None):
+    if current_data is None:
+        return jsonify({'error': 'No data available'}), 400
+        
+    df = filter_by_categories(current_data, selected_categories)
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
+    
+    if 'Hired_Released' in df.columns:
+        source_counts = df['Hired_Released'].value_counts()
+        fig = go.Figure(data=[go.Pie(labels=source_counts.index.tolist(), values=source_counts.values.tolist())])
+        fig.update_layout(title=f"Bench Source Distribution {category_text}", height=400)
+    else:
+        fig = go.Figure()
+        fig.update_layout(title=f"Bench Source Distribution - No Data Available {category_text}", height=400)
+    
+    return jsonify({
+        'charts': [
+            {'id': 'bench_source_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
         ]
     })
 
@@ -430,10 +451,10 @@ def drill_down():
     
     chart_column_map = {
         'status_chart': 'Status',
-        'location_chart': 'Location',
-        'region_chart': 'Location', 
-        'bench_category_chart': 'Bench Category',
-        'skills_chart': 'Tech1 Primary Skill',
+        'location_chart': 'State',
+        'opportunities_chart': 'Available for Other BU',
+        'bench_source_chart': 'Hired_Released',
+        'training_plan_chart': 'Training Plan',
         'rag_chart': 'Associate RAG Status',
         'ageing_chart': 'Actual Ageing',
         'trends_chart': 'Actual Ageing Slab',
