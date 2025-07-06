@@ -16,6 +16,13 @@ export class ModelInventoryComponent implements OnInit {
   models: ModelResponse[] = [];
   filteredModels: ModelResponse[] = [];
   searchTerm: string = '';
+  sortBy: string = '';
+  sortDirection: string = 'asc';
+  currentPage: number = 0;
+  pageSize: number = 10;
+  totalCount: number = 0;
+  totalPages: number = 0;
+  pageSizeOptions: number[] = [10, 20, 30];
   isLoading = true;
   errorMessage = '';
   editingModelId: number | null = null;
@@ -29,18 +36,31 @@ export class ModelInventoryComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadModels();
+    this.loadModelsWithPagination();
     this.loadEnumValues();
   }
 
   loadModels(): void {
+    this.loadModelsWithPagination();
+  }
+  
+  private loadModelsWithPagination(): void {
     this.isLoading = true;
     this.errorMessage = '';
     
-    this.modelService.getAllModels().subscribe({
-      next: (data) => {
-        this.models = data;
-        this.filteredModels = [...data];
+    this.modelService.getAllModels(this.searchTerm || undefined, this.sortBy || undefined, this.sortDirection, this.currentPage, this.pageSize).subscribe({
+      next: (response) => {
+        if (Array.isArray(response)) {
+          this.models = response;
+          this.filteredModels = [...response];
+          this.totalCount = response.length;
+          this.totalPages = 1;
+        } else {
+          this.models = response.models || [];
+          this.filteredModels = [...(response.models || [])];
+          this.totalCount = response.totalCount || 0;
+          this.totalPages = response.totalPages || 1;
+        }
         this.isLoading = false;
       },
       error: (error) => {
@@ -64,12 +84,22 @@ export class ModelInventoryComponent implements OnInit {
 
   onSearchChange(searchTerm: string): void {
     this.searchTerm = searchTerm;
+    this.currentPage = 0;
     this.isLoading = true;
     
-    this.modelService.getAllModels(searchTerm.trim() || undefined).subscribe({
-      next: (models) => {
-        this.models = models;
-        this.filteredModels = models;
+    this.modelService.getAllModels(searchTerm.trim() || undefined, this.sortBy || undefined, this.sortDirection, this.currentPage, this.pageSize).subscribe({
+      next: (response) => {
+        if (Array.isArray(response)) {
+          this.models = response;
+          this.filteredModels = [...response];
+          this.totalCount = response.length;
+          this.totalPages = 1;
+        } else {
+          this.models = response.models || [];
+          this.filteredModels = [...(response.models || [])];
+          this.totalCount = response.totalCount || 0;
+          this.totalPages = response.totalPages || 1;
+        }
         this.isLoading = false;
       },
       error: (error) => {
@@ -102,7 +132,7 @@ export class ModelInventoryComponent implements OnInit {
       const modelRequest: ModelRequest = this.editForm.value;
       this.modelService.updateModel(this.editingModelId, modelRequest).subscribe({
         next: (response) => {
-          this.loadModels();
+          this.loadModelsWithPagination();
           this.cancelEdit();
         },
         error: (error) => {
@@ -119,7 +149,50 @@ export class ModelInventoryComponent implements OnInit {
   }
 
   refreshModels(): void {
-    this.loadModels();
+    this.loadModelsWithPagination();
+  }
+  
+  onSort(column: string): void {
+    if (this.sortBy === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortBy = column;
+      this.sortDirection = 'asc';
+    }
+    this.currentPage = 0;
+    this.loadModelsWithPagination();
+  }
+
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.loadModelsWithPagination();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.currentPage = 0;
+    this.loadModelsWithPagination();
+  }
+
+  getSortIcon(column: string): string {
+    if (this.sortBy !== column) return '↕️';
+    return this.sortDirection === 'asc' ? '↑' : '↓';
+  }
+  
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxPagesToShow = 5;
+    const startPage = Math.max(0, this.currentPage - Math.floor(maxPagesToShow / 2));
+    const endPage = Math.min(this.totalPages - 1, startPage + maxPagesToShow - 1);
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+  
+  get Math() {
+    return Math;
   }
 
   navigateToRegistration(): void {

@@ -69,30 +69,42 @@ public class ModelController {
     }
     
     @GetMapping
-    @Operation(summary = "Get all models or search models", description = "Retrieve all registered models for inventory display or search with optional search term")
+    @Operation(summary = "Get all models or search models with sorting and pagination", description = "Retrieve all registered models with optional search, sorting, and pagination")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved models")
-    public ResponseEntity<List<ModelResponse>> getAllModels(
-            @RequestParam(value = "search", required = false) String searchTerm) {
-        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
-            log.info("GET /api/models - Searching models with term: {}", searchTerm);
-            try {
-                List<ModelResponse> models = modelSearchService.searchModels(searchTerm.trim());
-                log.info("GET /api/models - Successfully found {} models for search term: {}", models.size(), searchTerm);
-                return ResponseEntity.ok(models);
-            } catch (Exception e) {
-                log.error("GET /api/models - Failed to search models with term: {}, error: {}", searchTerm, e.getMessage(), e);
-                throw e;
+    public ResponseEntity<Map<String, Object>> getAllModels(
+            @RequestParam(value = "search", required = false) String searchTerm,
+            @RequestParam(value = "sortBy", required = false) String sortBy,
+            @RequestParam(value = "sortDirection", required = false, defaultValue = "asc") String sortDirection,
+            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(value = "size", required = false, defaultValue = "10") int size) {
+        log.info("GET /api/models - Retrieving models with sortBy: {}, sortDirection: {}, page: {}, size: {}", sortBy, sortDirection, page, size);
+        
+        try {
+            List<ModelResponse> models;
+            long totalCount;
+            
+            if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+                log.info("GET /api/models - Searching models with term: {}", searchTerm);
+                models = modelSearchService.searchModels(searchTerm.trim(), sortBy, sortDirection, page, size);
+                totalCount = modelSearchService.getSearchCount(searchTerm.trim());
+            } else {
+                models = modelSearchService.getAllModels(sortBy, sortDirection, page, size);
+                totalCount = modelSearchService.getTotalCount();
             }
-        } else {
-            log.info("GET /api/models - Retrieving all models");
-            try {
-                List<ModelResponse> models = modelSearchService.getAllModels();
-                log.info("GET /api/models - Successfully retrieved {} models", models.size());
-                return ResponseEntity.ok(models);
-            } catch (Exception e) {
-                log.error("GET /api/models - Failed to retrieve models, error: {}", e.getMessage(), e);
-                throw e;
-            }
+            
+            Map<String, Object> response = Map.of(
+                "models", models,
+                "totalCount", totalCount,
+                "page", page,
+                "size", size,
+                "totalPages", (int) Math.ceil((double) totalCount / size)
+            );
+            
+            log.info("GET /api/models - Successfully retrieved {} models, total: {}", models.size(), totalCount);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("GET /api/models - Error retrieving models: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
     
