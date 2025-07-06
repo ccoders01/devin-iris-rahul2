@@ -15,11 +15,14 @@ export class ModelService {
     return this.http.post<ModelResponse>(this.apiUrl, model);
   }
 
-  getAllModels(searchTerm?: string): Observable<ModelResponse[]> {
-    if (searchTerm) {
-      return this.http.get<ModelResponse[]>(`${this.apiUrl}?search=${encodeURIComponent(searchTerm)}`);
-    }
-    return this.http.get<ModelResponse[]>(this.apiUrl);
+  getAllModels(searchTerm?: string, sortBy?: string, sortDirection?: string, page?: number, size?: number): Observable<any> {
+    let params: any = {};
+    if (searchTerm) params.search = searchTerm;
+    if (sortBy) params.sortBy = sortBy;
+    if (sortDirection) params.sortDirection = sortDirection;
+    if (page !== undefined) params.page = page;
+    if (size !== undefined) params.size = size;
+    return this.http.get<any>(this.apiUrl, { params });
   }
 
   getModelById(id: number): Observable<ModelResponse> {
