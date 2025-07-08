@@ -278,8 +278,10 @@
             <div class="col-md-6">
                 <div class="upload-area-compact">
                     <h5>📁 Upload Excel File</h5>
-                    <input type="file" id="fileInput" accept=".xlsx" class="form-control mb-2" aria-label="Upload Excel file">
-                    <button onclick="uploadFile()" class="btn btn-primary btn-sm" aria-label="Upload and analyze Excel file">Upload & Analyze</button>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="file" id="fileInput" accept=".xlsx" class="form-control" style="flex: 1;" aria-label="Upload Excel file">
+                        <button onclick="uploadFile()" class="btn btn-primary btn-sm" style="white-space: nowrap;" aria-label="Upload and analyze Excel file">Upload & Analyze</button>
+                    </div>
                 </div>
             </div>
             <div class="col-md-6">
