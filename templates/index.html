@@ -80,6 +80,21 @@
             transform: translateY(-2px);
         }
         
+        .upload-area-compact {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            text-align: center;
+            margin: 10px 0;
+            background-color: var(--light-bg);
+            transition: var(--transition);
+        }
+        
+        .upload-area-compact:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+        
         .nav-pills .nav-link {
             border-radius: 25px;
             margin: 0 5px;
@@ -237,6 +252,10 @@
                 padding: 30px 20px;
             }
             
+            .upload-area-compact {
+                padding: 10px 15px;
+            }
+            
             .nav-pills .nav-link {
                 margin: 2px;
                 font-size: 0.9rem;
@@ -257,18 +276,16 @@
         <!-- File Upload Section -->
         <div class="row mb-4">
             <div class="col-md-6">
-                <div class="upload-area">
-                    <h4>📁 Upload Excel File</h4>
-                    <p>Upload your bench capacity Excel file (.xlsx)</p>
-                    <input type="file" id="fileInput" accept=".xlsx" class="form-control mb-3" aria-label="Upload Excel file">
-                    <button onclick="uploadFile()" class="btn btn-primary" aria-label="Upload and analyze Excel file">Upload & Analyze</button>
+                <div class="upload-area-compact">
+                    <h5>📁 Upload Excel File</h5>
+                    <input type="file" id="fileInput" accept=".xlsx" class="form-control mb-2" aria-label="Upload Excel file">
+                    <button onclick="uploadFile()" class="btn btn-primary btn-sm" aria-label="Upload and analyze Excel file">Upload & Analyze</button>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="upload-area">
-                    <h4>📊 Load Real Excel Data</h4>
-                    <p>Load actual bench capacity data (975 employees)</p>
-                    <button onclick="generateSample()" class="btn btn-success">Load Real Excel Data</button>
+                <div class="upload-area-compact">
+                    <h5>📊 Load Real Excel Data</h5>
+                    <button onclick="generateSample()" class="btn btn-success btn-sm">Load Real Excel Data</button>
                 </div>
             </div>
         </div>
