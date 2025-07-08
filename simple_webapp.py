@@ -97,6 +97,16 @@ def generate_sample():
     try:
         if initialize_data():
             stats = processor.get_basic_stats()
+            
+            if current_data is not None:
+                category_counts = current_data['Status'].value_counts().to_dict()
+                total_employees = len(current_data)
+                category_distribution = {}
+                for category, count in category_counts.items():
+                    percentage = round((count / total_employees) * 100, 1)
+                    category_distribution[category] = {'count': count, 'percentage': percentage}
+                stats['category_distribution'] = category_distribution
+            
             return jsonify({
                 'success': True,
                 'message': f'Real data loaded! {stats["total_employees"]} employees from Excel file.',

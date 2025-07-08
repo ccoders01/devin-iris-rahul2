@@ -169,6 +169,46 @@
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
         }
         
+        .category-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            font-weight: 500;
+            color: #495057;
+            transition: all 0.2s ease;
+        }
+        
+        .category-item.bench-category {
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            border-color: var(--primary-color);
+        }
+        
+        .category-item.bench-category:hover {
+            background-color: #5a6fd8;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .category-item.bench-category:active {
+            transform: translateY(0);
+        }
+        
+        .category-item.show-all {
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            border-color: #28a745;
+        }
+        
+        .category-item.show-all:hover {
+            background-color: #218838;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
         .alert {
             border-radius: var(--border-radius);
             border: none;
@@ -253,28 +293,10 @@
                         <h5 class="mb-0">📊 Filter by Employee Status</h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <select id="categoryFilter" class="form-select" multiple size="6">
-                                    <option value="Billable">Billable (868 employees)</option>
-                                    <option value="Bench">Bench (50 employees)</option>
-                                    <option value="Proposed">Proposed (18 employees)</option>
-                                    <option value="Management">Management (14 employees)</option>
-                                    <option value="On-Boarding">On-Boarding (7 employees)</option>
-                                    <option value="Soft Lock">Soft Lock (2 employees)</option>
-                                    <option value="Delivery Investment">Delivery Investment (2 employees)</option>
-                                    <option value="Relationship Investment">Relationship Investment (2 employees)</option>
-                                    <option value="Reserved">Reserved (2 employees)</option>
-                                    <option value="Transition">Transition (1 employee)</option>
-                                </select>
-                                <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple categories. All categories selected by default.</small>
-                            </div>
-                            <div class="col-md-4">
-                                <button onclick="selectAllCategories()" class="btn btn-outline-primary btn-sm mb-2 w-100">Select All</button>
-                                <button onclick="clearAllCategories()" class="btn btn-outline-secondary btn-sm mb-2 w-100">Clear All</button>
-                                <button onclick="applyFilter()" class="btn btn-primary w-100">Apply Filter</button>
-                            </div>
+                        <div id="categoryDisplay" class="d-flex flex-wrap gap-3 align-items-center">
+                            <!-- Categories will be populated dynamically -->
                         </div>
+                        <small class="form-text text-muted mt-2">Click on "Bench" to filter dashboard by bench employees only.</small>
                     </div>
                 </div>
             </div>
@@ -366,7 +388,70 @@
             document.getElementById('categoryFilterSection').style.display = 'block';
             document.getElementById('analyticsSection').style.display = 'block';
             
-            setTimeout(initializeCategoryFilter, 100);
+            // Populate category display
+            if (stats.category_distribution) {
+                populateCategoryDisplay(stats.category_distribution);
+            }
+            
+            // Initialize with all categories selected (default behavior)
+            selectedCategories = Object.keys(stats.category_distribution || {});
+        }
+        
+        function populateCategoryDisplay(categoryDistribution) {
+            const container = document.getElementById('categoryDisplay');
+            container.innerHTML = '';
+            
+            // Add "Show All" button
+            const showAllSpan = document.createElement('span');
+            showAllSpan.className = 'category-item show-all';
+            showAllSpan.textContent = 'Show All Categories';
+            showAllSpan.onclick = () => showAllCategories(categoryDistribution);
+            showAllSpan.setAttribute('title', 'Click to show all categories');
+            container.appendChild(showAllSpan);
+            
+            // Add separator
+            const separator = document.createElement('span');
+            separator.textContent = '|';
+            separator.style.color = '#dee2e6';
+            separator.style.margin = '0 8px';
+            container.appendChild(separator);
+            
+            // Add category items
+            Object.entries(categoryDistribution).forEach(([category, data]) => {
+                const categorySpan = document.createElement('span');
+                categorySpan.className = 'category-item';
+                categorySpan.textContent = `${category} (${data.count} - ${data.percentage}%)`;
+                
+                if (category === 'Bench') {
+                    categorySpan.classList.add('bench-category');
+                    categorySpan.onclick = () => filterByBench();
+                    categorySpan.setAttribute('title', 'Click to filter by bench employees');
+                }
+                
+                container.appendChild(categorySpan);
+            });
+        }
+        
+        function filterByBench() {
+            selectedCategories = ['Bench'];
+            showMessage('Filtering by Bench employees only', 'info');
+            
+            if (currentTab === 'data') {
+                loadDataPreview();
+            } else {
+                loadCharts(currentTab);
+            }
+        }
+        
+        function showAllCategories(categoryDistribution) {
+            selectedCategories = Object.keys(categoryDistribution);
+            showMessage('Showing all categories', 'info');
+            
+            if (currentTab === 'data') {
+                loadDataPreview();
+            } else {
+                loadCharts(currentTab);
+            }
         }
 
         function uploadFile() {
@@ -1108,91 +1193,6 @@
     </div>
 
     <script>
-        function selectAllCategories() {
-            const select = document.getElementById('categoryFilter');
-            for (let option of select.options) {
-                option.selected = true;
-            }
-            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
-        }
-
-        function clearAllCategories() {
-            const select = document.getElementById('categoryFilter');
-            for (let option of select.options) {
-                option.selected = false;
-            }
-            selectedCategories = [];
-        }
-
-        function applyFilter() {
-            const select = document.getElementById('categoryFilter');
-            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
-            
-            if (selectedCategories.length === 0) {
-                showMessage('Please select at least one category to filter by', 'warning');
-                return;
-            }
-            
-            if (currentTab === 'data') {
-                loadDataPreview();
-            } else {
-                loadCharts(currentTab);
-            }
-            
-            showMessage(`Filter applied: ${selectedCategories.length} categories selected`, 'success');
-        }
-
-        function initializeCategoryFilter() {
-            const select = document.getElementById('categoryFilter');
-            for (let option of select.options) {
-                option.selected = true;
-            }
-            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
-        }
-        // Category management functions
-        function selectAllCategories() {
-            const select = document.getElementById('categoryFilter');
-            for (let option of select.options) {
-                option.selected = true;
-            }
-            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
-        }
-
-        function clearAllCategories() {
-            const select = document.getElementById('categoryFilter');
-            for (let option of select.options) {
-                option.selected = false;
-            }
-            selectedCategories = [];
-        }
-
-        function applyFilter() {
-            const select = document.getElementById('categoryFilter');
-            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
-            
-            if (selectedCategories.length === 0) {
-                showMessage('Please select at least one category to filter by', 'warning');
-                return;
-            }
-            
-            // Refresh current tab with new filter
-            if (currentTab === 'data') {
-                loadDataPreview();
-            } else {
-                loadCharts(currentTab);
-            }
-            
-            showMessage(`Filter applied: ${selectedCategories.length} categories selected`, 'success');
-        }
-
-        function initializeCategoryFilter() {
-            const select = document.getElementById('categoryFilter');
-            // Select all options by default
-            for (let option of select.options) {
-                option.selected = true;
-            }
-            selectedCategories = Array.from(select.selectedOptions).map(option => option.value);
-        }
     </script>
 </body>
 </html>
