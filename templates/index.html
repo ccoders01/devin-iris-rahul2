@@ -196,18 +196,6 @@
             transform: translateY(0);
         }
         
-        .category-item.show-all {
-            background-color: #28a745;
-            color: white;
-            cursor: pointer;
-            border-color: #28a745;
-        }
-        
-        .category-item.show-all:hover {
-            background-color: #218838;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-        }
         
         .alert {
             border-radius: var(--border-radius);
@@ -296,7 +284,7 @@
                         <div id="categoryDisplay" class="d-flex flex-wrap gap-3 align-items-center">
                             <!-- Categories will be populated dynamically -->
                         </div>
-                        <small class="form-text text-muted mt-2">Click on "Bench" to filter dashboard by bench employees only.</small>
+                        <small class="form-text text-muted mt-2">Dashboard shows bench employees by default. Click on "Bench" to refresh the filter.</small>
                     </div>
                 </div>
             </div>
@@ -393,28 +381,20 @@
                 populateCategoryDisplay(stats.category_distribution);
             }
             
-            // Initialize with all categories selected (default behavior)
-            selectedCategories = Object.keys(stats.category_distribution || {});
+            // Initialize with Bench category selected by default
+            selectedCategories = ['Bench'];
+            
+            // Auto-load charts with Bench filter applied
+            if (currentTab === 'data') {
+                loadDataPreview();
+            } else {
+                loadCharts(currentTab);
+            }
         }
         
         function populateCategoryDisplay(categoryDistribution) {
             const container = document.getElementById('categoryDisplay');
             container.innerHTML = '';
-            
-            // Add "Show All" button
-            const showAllSpan = document.createElement('span');
-            showAllSpan.className = 'category-item show-all';
-            showAllSpan.textContent = 'Show All Categories';
-            showAllSpan.onclick = () => showAllCategories(categoryDistribution);
-            showAllSpan.setAttribute('title', 'Click to show all categories');
-            container.appendChild(showAllSpan);
-            
-            // Add separator
-            const separator = document.createElement('span');
-            separator.textContent = '|';
-            separator.style.color = '#dee2e6';
-            separator.style.margin = '0 8px';
-            container.appendChild(separator);
             
             // Add category items
             Object.entries(categoryDistribution).forEach(([category, data]) => {
@@ -443,16 +423,6 @@
             }
         }
         
-        function showAllCategories(categoryDistribution) {
-            selectedCategories = Object.keys(categoryDistribution);
-            showMessage('Showing all categories', 'info');
-            
-            if (currentTab === 'data') {
-                loadDataPreview();
-            } else {
-                loadCharts(currentTab);
-            }
-        }
 
         function uploadFile() {
             const fileInput = document.getElementById('fileInput');
