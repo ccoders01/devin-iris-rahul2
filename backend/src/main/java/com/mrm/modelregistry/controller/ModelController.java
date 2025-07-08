@@ -69,15 +69,13 @@ public class ModelController {
     }
     
     @GetMapping
-    @Operation(summary = "Get all models or search models with sorting and pagination", description = "Retrieve all registered models with optional search, sorting, and pagination")
+    @Operation(summary = "Get all models or search models with sorting", description = "Retrieve all registered models with optional search and sorting")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved models")
     public ResponseEntity<Map<String, Object>> getAllModels(
             @RequestParam(value = "search", required = false) String searchTerm,
             @RequestParam(value = "sortBy", required = false) String sortBy,
-            @RequestParam(value = "sortDirection", required = false, defaultValue = "asc") String sortDirection,
-            @RequestParam(value = "page", required = false, defaultValue = "0") int page,
-            @RequestParam(value = "size", required = false, defaultValue = "10") int size) {
-        log.info("GET /api/models - Retrieving models with sortBy: {}, sortDirection: {}, page: {}, size: {}", sortBy, sortDirection, page, size);
+            @RequestParam(value = "sortDirection", required = false, defaultValue = "asc") String sortDirection) {
+        log.info("GET /api/models - Retrieving models with sortBy: {}, sortDirection: {}", sortBy, sortDirection);
         
         try {
             List<ModelResponse> models;
@@ -85,19 +83,16 @@ public class ModelController {
             
             if (searchTerm != null && !searchTerm.trim().isEmpty()) {
                 log.info("GET /api/models - Searching models with term: {}", searchTerm);
-                models = modelSearchService.searchModels(searchTerm.trim(), sortBy, sortDirection, page, size);
+                models = modelSearchService.searchModels(searchTerm.trim(), sortBy, sortDirection);
                 totalCount = modelSearchService.getSearchCount(searchTerm.trim());
             } else {
-                models = modelSearchService.getAllModels(sortBy, sortDirection, page, size);
+                models = modelSearchService.getAllModels(sortBy, sortDirection);
                 totalCount = modelSearchService.getTotalCount();
             }
             
             Map<String, Object> response = Map.of(
                 "models", models,
-                "totalCount", totalCount,
-                "page", page,
-                "size", size,
-                "totalPages", (int) Math.ceil((double) totalCount / size)
+                "totalCount", totalCount
             );
             
             log.info("GET /api/models - Successfully retrieved {} models, total: {}", models.size(), totalCount);

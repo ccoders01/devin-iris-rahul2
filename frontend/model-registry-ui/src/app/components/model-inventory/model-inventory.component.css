@@ -439,19 +439,3 @@
     padding: 0.75rem 1rem;
   }
 }
-
-.pagination .page-link {
-  color: #007bff;
-  border-color: #dee2e6;
-}
-
-.pagination .page-item.active .page-link {
-  background-color: #007bff;
-  border-color: #007bff;
-}
-
-.pagination .page-link:hover {
-  color: #0056b3;
-  background-color: #e9ecef;
-  border-color: #dee2e6;
-}

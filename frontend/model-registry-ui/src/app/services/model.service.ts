@@ -15,13 +15,11 @@ export class ModelService {
     return this.http.post<ModelResponse>(this.apiUrl, model);
   }
 
-  getAllModels(searchTerm?: string, sortBy?: string, sortDirection?: string, page?: number, size?: number): Observable<any> {
+  getAllModels(searchTerm?: string, sortBy?: string, sortDirection?: string): Observable<any> {
     let params: any = {};
     if (searchTerm) params.search = searchTerm;
     if (sortBy) params.sortBy = sortBy;
     if (sortDirection) params.sortDirection = sortDirection;
-    if (page !== undefined) params.page = page;
-    if (size !== undefined) params.size = size;
     return this.http.get<any>(this.apiUrl, { params });
   }
 
