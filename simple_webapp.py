@@ -127,9 +127,11 @@ def get_analytics(chart_type):
     categories_param = request.args.get('categories', '')
     selected_categories = categories_param.split(',') if categories_param else []
     
+    project_filter = request.args.get('project_filter')
+    
     try:
         if chart_type == 'ageing':
-            return get_ageing_charts(selected_categories)
+            return get_ageing_charts(selected_categories, project_filter)
         elif chart_type == 'trends':
             return get_trends_charts(selected_categories)
         elif chart_type == 'opportunities':
@@ -140,8 +142,6 @@ def get_analytics(chart_type):
             return get_locations_charts(selected_categories)
         elif chart_type == 'bench_source':
             return get_bench_source_charts(selected_categories)
-        elif chart_type == 'ageing':
-            return get_ageing_charts(selected_categories)
         else:
             return jsonify({'error': 'Invalid chart type'}), 400
             
@@ -338,11 +338,14 @@ def get_bench_source_charts(selected_categories=None):
         ]
     })
 
-def get_ageing_charts(selected_categories=None):
+def get_ageing_charts(selected_categories=None, project_filter=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
     df = filter_by_categories(current_data, selected_categories)
+    
+    if project_filter:
+        df = df[df['Project Name'] == project_filter]
     
     if len(df) == 0:
         return jsonify({'message': 'No employees found for the selected categories'})
@@ -377,8 +380,9 @@ def get_ageing_charts(selected_categories=None):
             labels, values = zip(*sorted_weeks) if sorted_weeks else ([], [])
             
             fig = go.Figure(data=[go.Bar(x=list(labels), y=list(values))])
+            project_text = f" - {project_filter}" if project_filter else ""
             fig.update_layout(
-                title=f"Ageing Distribution (28-day Intervals) {category_text}", 
+                title=f"Ageing Distribution (28-day Intervals) {category_text}{project_text}", 
                 height=500,
                 xaxis_title="Week Ranges",
                 yaxis_title="Number of Employees"
@@ -488,6 +492,9 @@ def drill_down():
                 df = df[(df['Actual Ageing'] >= 141) & (df['Actual Ageing'] <= 168)]
             elif filter_value == "Week 25+":
                 df = df[df['Actual Ageing'] >= 169]
+            
+            if additional_filter:
+                df = df[df['Project Name'] == additional_filter]
         elif chart_id == 'location_status_chart':
             df = df[df['Location'] == filter_value]
             if additional_filter:

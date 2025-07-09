@@ -519,9 +519,85 @@
             
             if (tabName === 'data') {
                 loadDataPreview();
+            } else if (tabName === 'ageing') {
+                loadAgeingChart(null);
             } else {
                 loadCharts(tabName);
             }
+        }
+
+        function loadAgeingChart(projectFilter) {
+            document.getElementById('loadingSpinner').style.display = 'block';
+            
+            // Update button states
+            document.querySelectorAll('#chartsContainer button').forEach(btn => {
+                btn.className = btn.className.replace('btn-primary', 'btn-outline-primary')
+                                         .replace('btn-secondary', 'btn-outline-secondary')
+                                         .replace('btn-info', 'btn-outline-info');
+            });
+            
+            if (projectFilter === 'IRIS_IRIS-Delivery') {
+                document.getElementById('availableBenchBtn').className = 'btn btn-primary';
+            } else if (projectFilter === 'IRIS_Non-Available Bench') {
+                document.getElementById('nonAvailableBenchBtn').className = 'btn btn-secondary';
+            } else {
+                document.getElementById('allBenchBtn').className = 'btn btn-info';
+            }
+            
+            const categoryParams = selectedCategories.length > 0 ? `categories=${encodeURIComponent(selectedCategories.join(','))}` : '';
+            const projectParams = projectFilter ? `project_filter=${encodeURIComponent(projectFilter)}` : '';
+            const params = [categoryParams, projectParams].filter(p => p).join('&');
+            const queryString = params ? `?${params}` : '';
+            
+            fetch(window.location.origin + `/analytics/ageing${queryString}`, {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                
+                if (data.error) {
+                    showMessage(data.error, 'danger');
+                    return;
+                }
+                
+                // Clear existing charts and render new one
+                const chartContainer = document.getElementById('chartsContainer');
+                const existingChart = chartContainer.querySelector('.chart-container');
+                if (existingChart) {
+                    existingChart.remove();
+                }
+                
+                if (data.charts && data.charts.length > 0) {
+                    const chart = data.charts[0];
+                    const chartDiv = document.createElement('div');
+                    chartDiv.className = 'chart-container position-relative';
+                    chartDiv.id = chart.id;
+                    chartContainer.appendChild(chartDiv);
+                    
+                    Plotly.newPlot(chart.id, chart.data.data, chart.data.layout, {
+                        responsive: true,
+                        displayModeBar: false,
+                        showTips: true
+                    }).then(function() {
+                        // Add click event listener for drill-down
+                        const plotElement = document.getElementById(chart.id);
+                        plotElement.on('plotly_click', function(eventData) {
+                            if (eventData.points && eventData.points.length > 0) {
+                                const point = eventData.points[0];
+                                const filterValue = point.x;
+                                const additionalFilter = projectFilter;
+                                
+                                showDrillDownModal('ageing_chart', filterValue, additionalFilter);
+                            }
+                        });
+                    });
+                }
+            })
+            .catch(error => {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                showMessage('Error loading ageing chart: ' + error.message, 'danger');
+            });
         }
 
         function loadCharts(chartType) {
@@ -548,6 +624,24 @@
 
                 const container = document.getElementById('chartsContainer');
                 container.innerHTML = '';
+
+                // Add sub-category buttons for ageing tab
+                if (chartType === 'ageing') {
+                    const subCategoryDiv = document.createElement('div');
+                    subCategoryDiv.className = 'mb-3 d-flex gap-2';
+                    subCategoryDiv.innerHTML = `
+                        <button class="btn btn-outline-primary" onclick="loadAgeingChart('IRIS_IRIS-Delivery')" id="availableBenchBtn">
+                            Available Bench
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="loadAgeingChart('IRIS_Non-Available Bench')" id="nonAvailableBenchBtn">
+                            Non Available Bench
+                        </button>
+                        <button class="btn btn-info" onclick="loadAgeingChart(null)" id="allBenchBtn">
+                            All Bench
+                        </button>
+                    `;
+                    container.appendChild(subCategoryDiv);
+                }
 
                 // Create charts container
                 if (data.charts.length > 1) {

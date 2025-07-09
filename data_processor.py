@@ -170,6 +170,13 @@ class BenchAnalyticsProcessor:
                 for i in range(num_rows)
             ]
         
+        bench_mask = np.array(sample_data['Status']) == 'Bench'
+        if bench_mask.sum() > 0:
+            bench_projects = ['IRIS_IRIS-Delivery', 'IRIS_Non-Available Bench']
+            for i in range(num_rows):
+                if bench_mask[i]:
+                    sample_data['Project Name'][i] = np.random.choice(bench_projects)
+        
         allocated_mask = np.array(sample_data['Status']) == 'Allocated'
         if allocated_mask.sum() > 0:
             start_date = pd.Timestamp.now() + pd.DateOffset(months=1)
