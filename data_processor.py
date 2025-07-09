@@ -194,6 +194,8 @@ class BenchAnalyticsProcessor:
         training_plans = ['Java Certification', 'Cloud Architecture', 'Data Science', 'DevOps', 'AI/ML', 'No Training', 'Leadership']
         sample_data['Training Plan'] = np.random.choice(training_plans, num_rows)
         
+        sample_data['Actual Ageing'] = np.random.randint(1, 200, num_rows)
+        
         for col in self.column_categories['employee_info'] + \
                    self.column_categories['location_info'] + \
                    self.column_categories['project_allocation'] + \

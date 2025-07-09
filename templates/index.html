@@ -317,10 +317,7 @@
         <div id="analyticsSection" style="display: none;">
             <ul class="nav nav-pills mb-3" id="analyticsTabs" role="tablist" aria-label="Analytics navigation">
                 <li class="nav-item" role="presentation">
-                    <a class="nav-link active" href="javascript:void(0)" onclick="showTab('overview', event)" role="tab" aria-selected="true" aria-controls="overview-panel">📊 Overview</a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" href="javascript:void(0)" onclick="showTab('ageing', event)" role="tab" aria-selected="false" aria-controls="ageing-panel">⏰ Ageing</a>
+                    <a class="nav-link active" href="javascript:void(0)" onclick="showTab('ageing', event)" role="tab" aria-selected="true" aria-controls="ageing-panel">⏰ Ageing</a>
                 </li>
                 <li class="nav-item" role="presentation">
                     <a class="nav-link" href="javascript:void(0)" onclick="showTab('trends', event)" role="tab" aria-selected="false" aria-controls="trends-panel">📈 Trends</a>
@@ -363,7 +360,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let currentTab = 'overview';
+        let currentTab = 'ageing';
         let selectedCategories = ['Billable', 'Bench', 'Proposed', 'Management', 'On-Boarding', 'Soft Lock', 'Delivery Investment', 'Relationship Investment', 'Reserved', 'Transition'];
 
         function showMessage(message, type = 'info') {
@@ -552,8 +549,8 @@
                 const container = document.getElementById('chartsContainer');
                 container.innerHTML = '';
 
-                // Check if this is the overview tab with multiple charts for side-by-side layout
-                if (chartType === 'overview' && data.charts.length === 2) {
+                // Create charts container
+                if (data.charts.length > 1) {
                     // Create a row container for side-by-side layout
                     const rowDiv = document.createElement('div');
                     rowDiv.className = 'row';

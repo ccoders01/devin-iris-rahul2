@@ -128,8 +128,8 @@ def get_analytics(chart_type):
     selected_categories = categories_param.split(',') if categories_param else []
     
     try:
-        if chart_type == 'overview':
-            return get_overview_charts(selected_categories)
+        if chart_type == 'ageing':
+            return get_ageing_charts(selected_categories)
         elif chart_type == 'trends':
             return get_trends_charts(selected_categories)
         elif chart_type == 'opportunities':
@@ -148,56 +148,6 @@ def get_analytics(chart_type):
     except Exception as e:
         return jsonify({'error': f'Failed to generate {chart_type} analytics: {str(e)}'}), 500
 
-def get_overview_charts(selected_categories=None):
-    if current_data is None:
-        return jsonify({'error': 'No data available'}), 400
-        
-    df = filter_by_categories(current_data, selected_categories)
-    
-    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
-    
-    if 'Level' in df.columns:
-        level_df = df[df['Level'].notna() & (df['Level'] != '') & (df['Level'] != 'N/A')]
-        
-        if len(level_df) > 0:
-            level_counts = level_df['Level'].value_counts()
-            fig1 = go.Figure(data=[go.Pie(labels=level_counts.index.tolist(), values=level_counts.values.tolist())])
-            fig1.update_layout(title=f"Level Distribution {category_text}", height=400)
-        else:
-            fig1 = go.Figure()
-            fig1.update_layout(title=f"Level Distribution - No Level Data Available {category_text}", height=400)
-            fig1.add_annotation(text="No level assignments found for selected categories", 
-                             xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-    else:
-        fig1 = go.Figure()
-        fig1.update_layout(title=f"Level Distribution - Level Column Not Found {category_text}", height=400)
-        fig1.add_annotation(text="Level column not available in data", 
-                         xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-    
-    if 'ATL Eligible' in df.columns:
-        atl_df = df[df['ATL Eligible'].notna() & (df['ATL Eligible'] != '') & (df['ATL Eligible'] != 'N/A')]
-        
-        if len(atl_df) > 0:
-            atl_counts = atl_df['ATL Eligible'].value_counts()
-            fig2 = go.Figure(data=[go.Pie(labels=atl_counts.index.tolist(), values=atl_counts.values.tolist())])
-            fig2.update_layout(title=f"ATL Eligible Distribution {category_text}", height=400)
-        else:
-            fig2 = go.Figure()
-            fig2.update_layout(title=f"ATL Eligible Distribution - No ATL Data Available {category_text}", height=400)
-            fig2.add_annotation(text="No ATL eligible data found for selected categories", 
-                             xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-    else:
-        fig2 = go.Figure()
-        fig2.update_layout(title=f"ATL Eligible Distribution - ATL Column Not Found {category_text}", height=400)
-        fig2.add_annotation(text="ATL Eligible column not available in data", 
-                         xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False)
-    
-    return jsonify({
-        'charts': [
-            {'id': 'level_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
-            {'id': 'atl_eligible_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
-        ]
-    })
 
 def get_trends_charts(selected_categories=None):
     if current_data is None:
@@ -404,15 +354,35 @@ def get_ageing_charts(selected_categories=None):
         for _, row in df.iterrows():
             days = row['Actual Ageing']
             if pd.notna(days) and days >= 0:
-                week_num = int((days - 1) // 7) + 1
-                week_label = f"Week {week_num}"
+                if days <= 28:
+                    week_label = "Week 1-4"
+                elif days <= 56:
+                    week_label = "Week 5-8"
+                elif days <= 84:
+                    week_label = "Week 9-12"
+                elif days <= 112:
+                    week_label = "Week 13-16"
+                elif days <= 140:
+                    week_label = "Week 17-20"
+                elif days <= 168:
+                    week_label = "Week 21-24"
+                else:
+                    week_label = "Week 25+"
+                
                 ageing_weeks[week_label] = ageing_weeks.get(week_label, 0) + 1
         
         if ageing_weeks:
-            sorted_weeks = sorted(ageing_weeks.items(), key=lambda x: int(x[0].split()[1]))
-            labels, values = zip(*sorted_weeks)
-            fig = go.Figure(data=[go.Pie(labels=list(labels), values=list(values))])
-            fig.update_layout(title=f"Ageing Distribution (Weeks) {category_text}", height=500)
+            week_order = ["Week 1-4", "Week 5-8", "Week 9-12", "Week 13-16", "Week 17-20", "Week 21-24", "Week 25+"]
+            sorted_weeks = [(week, ageing_weeks.get(week, 0)) for week in week_order if ageing_weeks.get(week, 0) > 0]
+            labels, values = zip(*sorted_weeks) if sorted_weeks else ([], [])
+            
+            fig = go.Figure(data=[go.Bar(x=list(labels), y=list(values))])
+            fig.update_layout(
+                title=f"Ageing Distribution (28-day Intervals) {category_text}", 
+                height=500,
+                xaxis_title="Week Ranges",
+                yaxis_title="Number of Employees"
+            )
         else:
             fig = go.Figure()
             fig.update_layout(title=f"Ageing Distribution - No Data Available {category_text}", height=500)
@@ -504,10 +474,20 @@ def drill_down():
             elif filter_value == '8+ weeks':
                 df = df[df['Current Ageing'] > 56]
         elif chart_id == 'ageing_chart':
-            week_num = int(filter_value.split()[1])
-            start_day = (week_num - 1) * 7 + 1
-            end_day = week_num * 7
-            df = df[(df['Actual Ageing'] >= start_day) & (df['Actual Ageing'] <= end_day)]
+            if filter_value == "Week 1-4":
+                df = df[(df['Actual Ageing'] >= 1) & (df['Actual Ageing'] <= 28)]
+            elif filter_value == "Week 5-8":
+                df = df[(df['Actual Ageing'] >= 29) & (df['Actual Ageing'] <= 56)]
+            elif filter_value == "Week 9-12":
+                df = df[(df['Actual Ageing'] >= 57) & (df['Actual Ageing'] <= 84)]
+            elif filter_value == "Week 13-16":
+                df = df[(df['Actual Ageing'] >= 85) & (df['Actual Ageing'] <= 112)]
+            elif filter_value == "Week 17-20":
+                df = df[(df['Actual Ageing'] >= 113) & (df['Actual Ageing'] <= 140)]
+            elif filter_value == "Week 21-24":
+                df = df[(df['Actual Ageing'] >= 141) & (df['Actual Ageing'] <= 168)]
+            elif filter_value == "Week 25+":
+                df = df[df['Actual Ageing'] >= 169]
         elif chart_id == 'location_status_chart':
             df = df[df['Location'] == filter_value]
             if additional_filter:
