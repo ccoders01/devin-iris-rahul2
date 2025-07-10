@@ -580,9 +580,11 @@ def drill_down():
         end_idx = start_idx + page_size
         paginated_df = result_df.iloc[start_idx:end_idx]
         
+        paginated_df_clean = paginated_df.fillna('')
+        
         return jsonify({
             'success': True,
-            'data': paginated_df.to_dict('records'),
+            'data': paginated_df_clean.to_dict('records'),
             'columns': visible_columns,
             'available_columns': available_columns,
             'total_count': total_count,
