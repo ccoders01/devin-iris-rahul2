@@ -520,8 +520,17 @@ def drill_down():
             if column and column in df.columns:
                 df = df[df[column] == filter_value]
         
-        display_columns = ['Employee Name', 'Designation', 'Employment Status', 
-                         'Date of Joining', 'Status', 'Client Name', 'Project Name']
+        display_columns = ['Employee Name', 'Designation', 'Employment Status']
+        
+        if 'Actual Ageing' in df.columns:
+            df['Bench Days'] = df['Actual Ageing']
+        if 'No Of Evaluation' in df.columns:
+            df['Opportunities Given'] = df['No Of Evaluation']
+        if 'ATL Remarks' in df.columns:
+            df['ATL Remarks'] = df['ATL Remarks']
+        
+        new_columns = ['Bench Days', 'Opportunities Given', 'ATL Remarks']
+        display_columns.extend([col for col in new_columns if col in df.columns])
         
         all_available_columns = display_columns + ['ATL Eligible', 'Resignation Status', 'Potential ATL']
         available_columns = [col for col in all_available_columns if col in df.columns]
