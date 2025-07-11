@@ -532,7 +532,7 @@
             if (tabName === 'data') {
                 loadDataPreview();
             } else if (tabName === 'ageing') {
-                loadAgeingChart(null);
+                loadAgeingChart('IRIS_IRIS-Delivery');
             } else {
                 loadCharts(tabName);
             }
@@ -541,19 +541,23 @@
         function loadAgeingChart(projectFilter) {
             document.getElementById('loadingSpinner').style.display = 'block';
             
-            // Update button states
+            // Update button states only if buttons exist
             document.querySelectorAll('#chartsContainer button').forEach(btn => {
                 btn.className = btn.className.replace('btn-primary', 'btn-outline-primary')
                                          .replace('btn-secondary', 'btn-outline-secondary')
                                          .replace('btn-info', 'btn-outline-info');
             });
             
+            // Update specific button states only if they exist
             if (projectFilter === 'IRIS_IRIS-Delivery') {
-                document.getElementById('availableBenchBtn').className = 'btn btn-primary';
+                const btn = document.getElementById('availableBenchBtn');
+                if (btn) btn.className = 'btn btn-primary';
             } else if (projectFilter === 'IRIS_Non-Available Bench') {
-                document.getElementById('nonAvailableBenchBtn').className = 'btn btn-secondary';
+                const btn = document.getElementById('nonAvailableBenchBtn');
+                if (btn) btn.className = 'btn btn-secondary';
             } else {
-                document.getElementById('allBenchBtn').className = 'btn btn-info';
+                const btn = document.getElementById('allBenchBtn');
+                if (btn) btn.className = 'btn btn-info';
             }
             
             const categoryParams = selectedCategories.length > 0 ? `categories=${encodeURIComponent(selectedCategories.join(','))}` : '';

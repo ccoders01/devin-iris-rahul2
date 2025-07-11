@@ -357,25 +357,19 @@ def get_ageing_charts(selected_categories=None, project_filter=None):
         for _, row in df.iterrows():
             days = row['Actual Ageing']
             if pd.notna(days) and days >= 0:
-                if days <= 28:
-                    week_label = "Week 1-4"
+                if days < 29:
+                    week_label = "Week 0-4"
                 elif days <= 56:
-                    week_label = "Week 5-8"
+                    week_label = "Week 4-8"
                 elif days <= 84:
                     week_label = "Week 9-12"
-                elif days <= 112:
-                    week_label = "Week 13-16"
-                elif days <= 140:
-                    week_label = "Week 17-20"
-                elif days <= 168:
-                    week_label = "Week 21-24"
                 else:
-                    week_label = "Week 25+"
+                    week_label = "Week 13+"
                 
                 ageing_weeks[week_label] = ageing_weeks.get(week_label, 0) + 1
         
         if ageing_weeks:
-            week_order = ["Week 1-4", "Week 5-8", "Week 9-12", "Week 13-16", "Week 17-20", "Week 21-24", "Week 25+"]
+            week_order = ["Week 0-4", "Week 4-8", "Week 9-12", "Week 13+"]
             sorted_weeks = [(week, ageing_weeks.get(week, 0)) for week in week_order if ageing_weeks.get(week, 0) > 0]
             labels, values = zip(*sorted_weeks) if sorted_weeks else ([], [])
             
@@ -478,20 +472,14 @@ def drill_down():
             elif filter_value == '8+ weeks':
                 df = df[df['Current Ageing'] > 56]
         elif chart_id == 'ageing_chart':
-            if filter_value == "Week 1-4":
-                df = df[(df['Actual Ageing'] >= 1) & (df['Actual Ageing'] <= 28)]
-            elif filter_value == "Week 5-8":
+            if filter_value == "Week 0-4":
+                df = df[df['Actual Ageing'] < 29]
+            elif filter_value == "Week 4-8":
                 df = df[(df['Actual Ageing'] >= 29) & (df['Actual Ageing'] <= 56)]
             elif filter_value == "Week 9-12":
                 df = df[(df['Actual Ageing'] >= 57) & (df['Actual Ageing'] <= 84)]
-            elif filter_value == "Week 13-16":
-                df = df[(df['Actual Ageing'] >= 85) & (df['Actual Ageing'] <= 112)]
-            elif filter_value == "Week 17-20":
-                df = df[(df['Actual Ageing'] >= 113) & (df['Actual Ageing'] <= 140)]
-            elif filter_value == "Week 21-24":
-                df = df[(df['Actual Ageing'] >= 141) & (df['Actual Ageing'] <= 168)]
-            elif filter_value == "Week 25+":
-                df = df[df['Actual Ageing'] >= 169]
+            elif filter_value == "Week 13+":
+                df = df[df['Actual Ageing'] >= 85]
             
             if additional_filter:
                 df = df[df['Project Name'] == additional_filter]
