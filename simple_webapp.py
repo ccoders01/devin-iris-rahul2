@@ -508,7 +508,7 @@ def drill_down():
             if column and column in df.columns:
                 df = df[df[column] == filter_value]
         
-        display_columns = ['Employee Name', 'Designation', 'Employment Status']
+        display_columns = ['Employee Name', 'Designation']
         
         if 'Actual Ageing' in df.columns:
             df['Bench Days'] = df['Actual Ageing']
@@ -516,11 +516,31 @@ def drill_down():
             df['Opportunities Given'] = df['No Of Evaluation']
         if 'ATL Remarks' in df.columns:
             df['ATL Remarks'] = df['ATL Remarks']
+        if 'Level' in df.columns:
+            df['Level'] = df['Level']
         
-        new_columns = ['Bench Days', 'Opportunities Given', 'ATL Remarks']
+        if 'City' in df.columns and 'State' in df.columns:
+            df['Location'] = df['City'].astype(str) + ', ' + df['State'].astype(str)
+            df['Location'] = df['Location'].replace('nan, nan', '').replace(', nan', '').replace('nan, ', '')
+        
+        if 'Region' in df.columns:
+            df['Region'] = df['Region']
+        if 'Tech1 Primary Skill' in df.columns:
+            df['Skill'] = df['Tech1 Primary Skill']
+        
+        if 'Tech1 For Training' in df.columns and 'Tech 2 For Training' in df.columns:
+            df['Training'] = df['Tech1 For Training'].astype(str) + ', ' + df['Tech 2 For Training'].astype(str)
+            df['Training'] = df['Training'].replace('nan, nan', '').replace(', nan', '').replace('nan, ', '')
+        
+        if 'Training Status' in df.columns:
+            df['Training Status'] = df['Training Status']
+        if 'WFM Plan Status' in df.columns:
+            df['WFM Plan Status'] = df['WFM Plan Status']
+        
+        new_columns = ['Bench Days', 'Opportunities Given', 'ATL Remarks', 'Level', 'Location', 'Region', 'Skill', 'Training', 'Training Status', 'WFM Plan Status']
         display_columns.extend([col for col in new_columns if col in df.columns])
         
-        all_available_columns = display_columns + ['ATL Eligible', 'Resignation Status', 'Potential ATL']
+        all_available_columns = display_columns + ['ATL Eligible', 'Resignation Status']
         available_columns = [col for col in all_available_columns if col in df.columns]
         
         if visible_columns:

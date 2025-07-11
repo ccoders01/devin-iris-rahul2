@@ -203,6 +203,22 @@ class BenchAnalyticsProcessor:
         
         sample_data['Actual Ageing'] = np.random.randint(1, 200, num_rows)
         
+        cities = ['Bangalore', 'Hyderabad', 'Chennai', 'Mumbai', 'Pune', 'Delhi', 'Kolkata', 'Gurgaon', 'Noida']
+        sample_data['City'] = np.random.choice(cities, num_rows)
+        
+        regions = ['South', 'West', 'North', 'East', 'Central']
+        sample_data['Region'] = np.random.choice(regions, num_rows)
+        
+        training_skills = ['Java', 'Python', 'AWS', 'Azure', 'React', 'Angular', 'DevOps', 'Data Science', 'AI/ML', '']
+        sample_data['Tech1 For Training'] = np.random.choice(training_skills, num_rows, p=[0.15, 0.15, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.05, 0.05])
+        sample_data['Tech 2 For Training'] = np.random.choice(training_skills, num_rows, p=[0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])
+        
+        training_statuses = ['Completed', 'In Progress', 'Planned', 'Not Started', '']
+        sample_data['Training Status'] = np.random.choice(training_statuses, num_rows, p=[0.3, 0.2, 0.2, 0.2, 0.1])
+        
+        wfm_statuses = ['Planned', 'In Progress', 'Completed', 'On Hold', 'Not Applicable']
+        sample_data['WFM Plan Status'] = np.random.choice(wfm_statuses, num_rows, p=[0.25, 0.2, 0.2, 0.15, 0.2])
+        
         for col in self.column_categories['employee_info'] + \
                    self.column_categories['location_info'] + \
                    self.column_categories['project_allocation'] + \
