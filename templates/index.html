@@ -526,6 +526,21 @@
             if (tabName === 'data') {
                 loadDataPreview();
             } else if (tabName === 'ageing') {
+                // Add sub-category buttons for Ageing tab
+                const chartContainer = document.getElementById('chartsContainer');
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'mb-3 d-flex gap-2 justify-content-center';
+                buttonContainer.innerHTML = `
+                    <button id="availableBenchBtn" class="btn btn-primary" onclick="loadAgeingChart('IRIS_IRIS-Delivery')">
+                        📊 Available Bench
+                    </button>
+                    <button id="nonAvailableBenchBtn" class="btn btn-outline-secondary" onclick="loadAgeingChart('IRIS_Non-Available Bench')">
+                        📋 Non Available Bench
+                    </button>
+                `;
+                chartContainer.appendChild(buttonContainer);
+                
+                // Load default chart (Available Bench)
                 loadAgeingChart('IRIS_IRIS-Delivery');
             } else {
                 loadCharts(tabName);
