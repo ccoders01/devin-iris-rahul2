@@ -219,6 +219,9 @@ class BenchAnalyticsProcessor:
         wfm_statuses = ['Planned', 'In Progress', 'Completed', 'On Hold', 'Not Applicable']
         sample_data['WFM Plan Status'] = np.random.choice(wfm_statuses, num_rows, p=[0.25, 0.2, 0.2, 0.15, 0.2])
         
+        bgv_statuses = ['Completed', 'In Progress', 'Pending', 'Not Required', '']
+        sample_data['BGV Closure Status'] = np.random.choice(bgv_statuses, num_rows, p=[0.4, 0.2, 0.2, 0.1, 0.1])
+        
         for col in self.column_categories['employee_info'] + \
                    self.column_categories['location_info'] + \
                    self.column_categories['project_allocation'] + \

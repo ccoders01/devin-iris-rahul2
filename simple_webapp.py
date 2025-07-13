@@ -132,16 +132,14 @@ def get_analytics(chart_type):
     try:
         if chart_type == 'ageing':
             return get_ageing_charts(selected_categories, project_filter)
-        elif chart_type == 'trends':
-            return get_trends_charts(selected_categories)
-        elif chart_type == 'opportunities':
-            return get_opportunities_charts(selected_categories)
-        elif chart_type == 'skills':
-            return get_skills_charts(selected_categories)
-        elif chart_type == 'locations':
-            return get_locations_charts(selected_categories)
-        elif chart_type == 'bench_source':
-            return get_bench_source_charts(selected_categories)
+        elif chart_type == 'skill_experience':
+            return get_skill_experience_charts(selected_categories)
+        elif chart_type == 'performance':
+            return get_performance_charts(selected_categories)
+        elif chart_type == 'wfm_status':
+            return get_wfm_status_charts(selected_categories)
+        elif chart_type == 'bgv':
+            return get_bgv_charts(selected_categories)
         else:
             return jsonify({'error': 'Invalid chart type'}), 400
             
@@ -149,7 +147,7 @@ def get_analytics(chart_type):
         return jsonify({'error': f'Failed to generate {chart_type} analytics: {str(e)}'}), 500
 
 
-def get_trends_charts(selected_categories=None):
+def get_skill_experience_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
@@ -160,85 +158,47 @@ def get_trends_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    if 'Actual Ageing Slab' in df.columns:
-        slab_counts = df['Actual Ageing Slab'].value_counts()
-        
-        slab_order = ['0-1 Wks', '1-2 Wks', '2-3 Wks', '3-4 Wks', '4-5 Wks', '5-6 Wks', 
-                     '6-7 Wks', '7-8 Wks', '8-9 Wks', '9-10 Wks', '10-11 Wks', '11-12 Wks',
-                     '12-13 Wks', '13-14 Wks', '14-15 Wks', '15-16 Wks', '16-18 Wks', 
-                     '18-20 Wks', '20-22 Wks', '22-24 Wks', '24-25 Wks', '>25 Wks']
-        
-        progression_counts = []
-        x_labels = []
-        
-        for slab in slab_order:
-            if slab in slab_counts.index:
-                progression_counts.append(slab_counts[slab])
-                x_labels.append(slab)
-        
-        fig1 = go.Figure(data=[go.Scatter(
-            x=x_labels, 
-            y=progression_counts,
-            mode='lines+markers',
-            line=dict(width=3, color='#1f77b4'),
-            marker=dict(size=8, color='#1f77b4'),
-            fill='tonexty',
-            fillcolor='rgba(31, 119, 180, 0.1)'
-        )])
-        
-        fig1.update_layout(
-            title=f"Employee Progression Through Ageing Slabs {category_text}", 
-            height=400,
-            xaxis_title="Ageing Slab",
-            yaxis_title="Employee Count",
-            xaxis=dict(tickangle=45),
-            showlegend=False
-        )
+    # First chart: Skills distribution
+    if 'Tech1 Primary Skill' in df.columns:
+        skill_counts = df['Tech1 Primary Skill'].value_counts()
+        fig1 = go.Figure(data=[go.Bar(x=skill_counts.index.tolist(), y=skill_counts.values.tolist())])
+        fig1.update_layout(title=f"Skills Distribution {category_text}", height=400, xaxis_title="Skills", yaxis_title="Count")
     else:
         fig1 = go.Figure()
-        fig1.update_layout(title=f"Ageing Trends - Actual Ageing Slab Column Not Found {category_text}", height=400)
+        fig1.update_layout(title=f"Skills Distribution - No Data Available {category_text}", height=400)
     
-    if 'Planned ReleaseDate' in current_data.columns:
-        valid_dates = pd.to_datetime(current_data['Planned ReleaseDate'], errors='coerce')
-        valid_dates = valid_dates.dropna()
+    # Second chart: Experience Slab distribution
+    if 'Total Experience' in df.columns:
+        exp_data = pd.to_numeric(df['Total Experience'], errors='coerce').dropna()
+        exp_slabs = []
+        for exp in exp_data:
+            if exp < 2:
+                exp_slabs.append('0-2 years')
+            elif exp < 5:
+                exp_slabs.append('2-5 years')
+            elif exp < 10:
+                exp_slabs.append('5-10 years')
+            else:
+                exp_slabs.append('10+ years')
         
-        if len(valid_dates) > 0:
-            monthly_counts = valid_dates.dt.to_period('M').value_counts().sort_index()
-            
-            months = [period.strftime('%b %Y') for period in monthly_counts.index]
-            counts = monthly_counts.values.tolist()
-            
-            fig2 = go.Figure(data=[go.Scatter(
-                x=months,
-                y=counts,
-                mode='lines+markers',
-                line=dict(width=3, color='#ff7f0e'),
-                marker=dict(size=8, color='#ff7f0e')
-            )])
-            
-            fig2.update_layout(
-                title="Projected Bench - Monthly Release Projections (All Categories)", 
-                height=400,
-                xaxis_title="Month",
-                yaxis_title="Employee Count",
-                xaxis=dict(tickangle=45),
-                showlegend=False
-            )
-        else:
-            fig2 = go.Figure()
-            fig2.update_layout(title="Projected Bench - No Valid Release Dates Found", height=400)
+        exp_slab_counts = pd.Series(exp_slabs).value_counts()
+        slab_order = ['0-2 years', '2-5 years', '5-10 years', '10+ years']
+        ordered_counts = [exp_slab_counts.get(slab, 0) for slab in slab_order]
+        
+        fig2 = go.Figure(data=[go.Bar(x=slab_order, y=ordered_counts)])
+        fig2.update_layout(title=f"Experience Slab Distribution {category_text}", height=400, xaxis_title="Experience Slab", yaxis_title="Count")
     else:
         fig2 = go.Figure()
-        fig2.update_layout(title="Projected Bench - Planned ReleaseDate Column Not Found", height=400)
+        fig2.update_layout(title=f"Experience Slab Distribution - No Data Available {category_text}", height=400)
     
     return jsonify({
         'charts': [
-            {'id': 'trends_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
-            {'id': 'projected_bench_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
+            {'id': 'skills_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
+            {'id': 'experience_slab_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
         ]
     })
 
-def get_opportunities_charts(selected_categories=None):
+def get_performance_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
@@ -249,46 +209,35 @@ def get_opportunities_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    if 'Available for Other BU' in df.columns:
-        opportunity_counts = df['Available for Other BU'].value_counts()
-        fig1 = go.Figure(data=[go.Pie(labels=opportunity_counts.index.tolist(), values=opportunity_counts.values.tolist())])
-        fig1.update_layout(title=f"Opportunities Distribution {category_text}", height=400)
+    if 'Associate RAG Status' in df.columns:
+        rag_counts = df['Associate RAG Status'].value_counts()
+        total_records = len(df)
+        blank_count = total_records - rag_counts.sum()
+        if blank_count > 0:
+            rag_counts['Blank'] = blank_count
+        
+        fig1 = go.Figure(data=[go.Bar(x=rag_counts.index.tolist(), y=rag_counts.values.tolist())])
+        fig1.update_layout(title=f"Associate RAG Status Distribution {category_text}", height=400, xaxis_title="RAG Status", yaxis_title="Count")
     else:
         fig1 = go.Figure()
-        fig1.update_layout(title=f"Opportunities Distribution - No Data Available {category_text}", height=400)
+        fig1.update_layout(title=f"Associate RAG Status - No Data Available {category_text}", height=400)
     
-    return jsonify({
-        'charts': [
-            {'id': 'opportunities_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))}
-        ]
-    })
-
-def get_skills_charts(selected_categories=None):
-    if current_data is None:
-        return jsonify({'error': 'No data available'}), 400
-        
-    df = filter_by_categories(current_data, selected_categories)
-    
-    if len(df) == 0:
-        return jsonify({'message': 'No employees found for the selected categories'})
-    
-    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
-    
-    if 'Training Plan' in df.columns:
-        training_counts = df['Training Plan'].value_counts()
-        fig1 = go.Figure(data=[go.Pie(labels=training_counts.index.tolist(), values=training_counts.values.tolist())])
-        fig1.update_layout(title=f"Training Plan Distribution {category_text}", height=400)
+    if 'ATL Eligible' in df.columns:
+        atl_counts = df['ATL Eligible'].value_counts()
+        fig2 = go.Figure(data=[go.Bar(x=atl_counts.index.tolist(), y=atl_counts.values.tolist())])
+        fig2.update_layout(title=f"ATL Eligible Distribution {category_text}", height=400, xaxis_title="ATL Eligible", yaxis_title="Count")
     else:
-        fig1 = go.Figure()
-        fig1.update_layout(title=f"Training Plan Distribution - No Data Available {category_text}", height=400)
+        fig2 = go.Figure()
+        fig2.update_layout(title=f"ATL Eligible - No Data Available {category_text}", height=400)
     
     return jsonify({
         'charts': [
-            {'id': 'training_plan_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))}
+            {'id': 'rag_status_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
+            {'id': 'atl_eligible_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
         ]
     })
 
-def get_locations_charts(selected_categories=None):
+def get_wfm_status_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
@@ -299,21 +248,21 @@ def get_locations_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    if 'State' in df.columns:
-        state_counts = df['State'].value_counts()
-        fig = go.Figure(data=[go.Pie(labels=state_counts.index.tolist(), values=state_counts.values.tolist())])
-        fig.update_layout(title=f"Location Distribution by State {category_text}", height=400)
+    if 'WFM Plan Status' in df.columns:
+        wfm_counts = df['WFM Plan Status'].value_counts()
+        fig = go.Figure(data=[go.Bar(x=wfm_counts.index.tolist(), y=wfm_counts.values.tolist())])
+        fig.update_layout(title=f"WFM Plan Status Distribution {category_text}", height=400, xaxis_title="WFM Plan Status", yaxis_title="Count")
     else:
         fig = go.Figure()
-        fig.update_layout(title=f"Location Distribution - No State Data Available {category_text}", height=400)
+        fig.update_layout(title=f"WFM Plan Status - No Data Available {category_text}", height=400)
     
     return jsonify({
         'charts': [
-            {'id': 'location_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+            {'id': 'wfm_plan_status_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
         ]
     })
 
-def get_bench_source_charts(selected_categories=None):
+def get_bgv_charts(selected_categories=None):
     if current_data is None:
         return jsonify({'error': 'No data available'}), 400
         
@@ -324,19 +273,25 @@ def get_bench_source_charts(selected_categories=None):
     
     category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
     
-    if 'Hired_Released' in df.columns:
-        source_counts = df['Hired_Released'].value_counts()
-        fig = go.Figure(data=[go.Pie(labels=source_counts.index.tolist(), values=source_counts.values.tolist())])
-        fig.update_layout(title=f"Bench Source Distribution {category_text}", height=400)
+    if 'BGV Closure Status' in df.columns:
+        bgv_counts = df['BGV Closure Status'].value_counts()
+        total_records = len(df)
+        blank_count = total_records - bgv_counts.sum()
+        if blank_count > 0:
+            bgv_counts['Blank'] = blank_count
+        
+        fig = go.Figure(data=[go.Bar(x=bgv_counts.index.tolist(), y=bgv_counts.values.tolist())])
+        fig.update_layout(title=f"BGV Closure Status Distribution {category_text}", height=400, xaxis_title="BGV Closure Status", yaxis_title="Count")
     else:
         fig = go.Figure()
-        fig.update_layout(title=f"Bench Source Distribution - No Data Available {category_text}", height=400)
+        fig.update_layout(title=f"BGV Closure Status - No Data Available {category_text}", height=400)
     
     return jsonify({
         'charts': [
-            {'id': 'bench_source_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+            {'id': 'bgv_closure_status_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
         ]
     })
+
 
 def get_ageing_charts(selected_categories=None, project_filter=None):
     if current_data is None:
@@ -443,15 +398,13 @@ def drill_down():
     chart_column_map = {
         'status_chart': 'Status',
         'location_chart': 'State',
-        'opportunities_chart': 'Available for Other BU',
-        'bench_source_chart': 'Hired_Released',
-        'training_plan_chart': 'Training Plan',
-        'level_chart': 'Level',
-        'atl_eligible_chart': 'ATL Eligible',
-        'rag_chart': 'Associate RAG Status',
         'ageing_chart': 'Actual Ageing',
-        'trends_chart': 'Actual Ageing Slab',
-        'projected_bench_chart': 'Planned ReleaseDate'
+        'skills_chart': 'Tech1 Primary Skill',
+        'experience_slab_chart': 'Total Experience',
+        'rag_status_chart': 'Associate RAG Status',
+        'atl_eligible_chart': 'ATL Eligible',
+        'wfm_plan_status_chart': 'WFM Plan Status',
+        'bgv_closure_status_chart': 'BGV Closure Status'
     }
     
     try:
@@ -483,6 +436,15 @@ def drill_down():
             
             if additional_filter:
                 df = df[df['Project Name'] == additional_filter]
+        elif chart_id == 'experience_slab_chart':
+            if filter_value == '0-2 years':
+                df = df[df['Total Experience'] < 2]
+            elif filter_value == '2-5 years':
+                df = df[(df['Total Experience'] >= 2) & (df['Total Experience'] < 5)]
+            elif filter_value == '5-10 years':
+                df = df[(df['Total Experience'] >= 5) & (df['Total Experience'] < 10)]
+            elif filter_value == '10+ years':
+                df = df[df['Total Experience'] >= 10]
         elif chart_id == 'location_status_chart':
             df = df[df['Location'] == filter_value]
             if additional_filter:
