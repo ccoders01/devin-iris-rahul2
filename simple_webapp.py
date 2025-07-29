@@ -1,0 +1,577 @@
+#!/usr/bin/env python3
+"""
+Simple Flask Web Application for Bench Analytics
+A more reliable alternative to the Dash implementation
+"""
+
+from flask import Flask, render_template, request, jsonify, send_file, Response
+import pandas as pd
+import numpy as np
+import plotly.graph_objs as go
+import plotly.utils
+import json
+import io
+import base64
+from data_processor import BenchAnalyticsProcessor
+
+def filter_by_categories(df, selected_categories):
+    """Filter dataframe by selected categories. If no categories selected, return all data."""
+    if not selected_categories or len(selected_categories) == 0:
+        return df
+    
+    filtered_df = df[df['Status'].isin(selected_categories)]
+    
+    if len(filtered_df) == 0:
+        return df
+    
+    return filtered_df
+
+app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+EXCEL_FILE_PATH = '/home/ubuntu/attachments/12b1bb37-764b-4db6-8704-1c4922cc604a/Original_Bench+capacity+Jun+24.xlsx'
+processor = None
+current_data = None
+
+def initialize_data():
+    global processor, current_data
+    try:
+        processor = BenchAnalyticsProcessor(EXCEL_FILE_PATH)
+        if processor.load_data():
+            current_data = processor.df
+            stats = processor.get_basic_stats()
+            print(f"✅ Real data loaded successfully: {stats['total_employees']} employees")
+            print(f"   - Bench employees: {stats['bench_count']} ({stats['bench_percentage']}%)")
+            print(f"   - Allocated employees: {stats['allocated_count']}")
+            return True
+        else:
+            print("❌ Failed to load Excel data")
+            return False
+    except Exception as e:
+        print(f"❌ Error loading Excel data: {e}")
+        return False
+
+initialize_data()
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    global processor, current_data
+    
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if file and file.filename.endswith('.xlsx'):
+            temp_path = f'/tmp/{file.filename}'
+            file.save(temp_path)
+            
+            processor = BenchAnalyticsProcessor(temp_path)
+            if processor.load_data():
+                current_data = processor.df
+                stats = processor.get_basic_stats()
+                return jsonify({
+                    'success': True,
+                    'message': f'File uploaded successfully! {stats["total_employees"]} employees loaded.',
+                    'stats': stats
+                })
+            else:
+                return jsonify({'error': 'Failed to process Excel file'}), 400
+        else:
+            return jsonify({'error': 'Please upload an Excel (.xlsx) file'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
+
+@app.route('/generate_sample')
+def generate_sample():
+    global processor, current_data
+    
+    try:
+        if initialize_data():
+            stats = processor.get_basic_stats()
+            
+            if current_data is not None:
+                category_counts = current_data['Status'].value_counts().to_dict()
+                total_employees = len(current_data)
+                category_distribution = {}
+                for category, count in category_counts.items():
+                    percentage = round((count / total_employees) * 100, 1)
+                    category_distribution[category] = {'count': count, 'percentage': percentage}
+                stats['category_distribution'] = category_distribution
+            
+            return jsonify({
+                'success': True,
+                'message': f'Real data loaded! {stats["total_employees"]} employees from Excel file.',
+                'stats': stats
+            })
+        else:
+            return jsonify({'error': 'Failed to load Excel data'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Failed to load Excel data: {str(e)}'}), 500
+
+@app.route('/analytics/<chart_type>')
+def get_analytics(chart_type):
+    global processor, current_data
+    
+    if processor is None or current_data is None:
+        return jsonify({'error': 'No data available. Please upload a file or generate sample data.'}), 400
+    
+    categories_param = request.args.get('categories', '')
+    selected_categories = categories_param.split(',') if categories_param else []
+    
+    project_filter = request.args.get('project_filter')
+    
+    try:
+        if chart_type == 'ageing':
+            return get_ageing_charts(selected_categories, project_filter)
+        elif chart_type == 'skill_experience':
+            return get_skill_experience_charts(selected_categories)
+        elif chart_type == 'performance':
+            return get_performance_charts(selected_categories)
+        elif chart_type == 'wfm_status':
+            return get_wfm_status_charts(selected_categories)
+        elif chart_type == 'bgv':
+            return get_bgv_charts(selected_categories)
+        else:
+            return jsonify({'error': 'Invalid chart type'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': f'Failed to generate {chart_type} analytics: {str(e)}'}), 500
+
+
+def get_skill_experience_charts(selected_categories=None):
+    if current_data is None:
+        return jsonify({'error': 'No data available'}), 400
+        
+    df = filter_by_categories(current_data, selected_categories)
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
+    
+    # First chart: Skills distribution
+    if 'Tech1 Primary Skill' in df.columns:
+        skill_counts = df['Tech1 Primary Skill'].value_counts()
+        fig1 = go.Figure(data=[go.Bar(x=skill_counts.index.tolist(), y=skill_counts.values.tolist())])
+        fig1.update_layout(title=f"Skills Distribution {category_text}", height=400, xaxis_title="Skills", yaxis_title="Count")
+    else:
+        fig1 = go.Figure()
+        fig1.update_layout(title=f"Skills Distribution - No Data Available {category_text}", height=400)
+    
+    # Second chart: Experience Slab distribution
+    if 'Total Experience' in df.columns:
+        exp_data = pd.to_numeric(df['Total Experience'], errors='coerce').dropna()
+        exp_slabs = []
+        for exp in exp_data:
+            if exp < 2:
+                exp_slabs.append('0-2 years')
+            elif exp < 5:
+                exp_slabs.append('2-5 years')
+            elif exp < 10:
+                exp_slabs.append('5-10 years')
+            else:
+                exp_slabs.append('10+ years')
+        
+        exp_slab_counts = pd.Series(exp_slabs).value_counts()
+        slab_order = ['0-2 years', '2-5 years', '5-10 years', '10+ years']
+        ordered_counts = [exp_slab_counts.get(slab, 0) for slab in slab_order]
+        
+        fig2 = go.Figure(data=[go.Bar(x=slab_order, y=ordered_counts)])
+        fig2.update_layout(title=f"Experience Slab Distribution {category_text}", height=400, xaxis_title="Experience Slab", yaxis_title="Count")
+    else:
+        fig2 = go.Figure()
+        fig2.update_layout(title=f"Experience Slab Distribution - No Data Available {category_text}", height=400)
+    
+    return jsonify({
+        'charts': [
+            {'id': 'skills_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
+            {'id': 'experience_slab_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
+        ]
+    })
+
+def get_performance_charts(selected_categories=None):
+    if current_data is None:
+        return jsonify({'error': 'No data available'}), 400
+        
+    df = filter_by_categories(current_data, selected_categories)
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
+    
+    if 'Associate RAG Status' in df.columns:
+        rag_counts = df['Associate RAG Status'].value_counts()
+        total_records = len(df)
+        blank_count = total_records - rag_counts.sum()
+        if blank_count > 0:
+            rag_counts['Blank'] = blank_count
+        
+        fig1 = go.Figure(data=[go.Bar(x=rag_counts.index.tolist(), y=rag_counts.values.tolist())])
+        fig1.update_layout(title=f"Associate RAG Status Distribution {category_text}", height=400, xaxis_title="RAG Status", yaxis_title="Count")
+    else:
+        fig1 = go.Figure()
+        fig1.update_layout(title=f"Associate RAG Status - No Data Available {category_text}", height=400)
+    
+    if 'ATL Eligible' in df.columns:
+        atl_counts = df['ATL Eligible'].value_counts()
+        fig2 = go.Figure(data=[go.Bar(x=atl_counts.index.tolist(), y=atl_counts.values.tolist())])
+        fig2.update_layout(title=f"ATL Eligible Distribution {category_text}", height=400, xaxis_title="ATL Eligible", yaxis_title="Count")
+    else:
+        fig2 = go.Figure()
+        fig2.update_layout(title=f"ATL Eligible - No Data Available {category_text}", height=400)
+    
+    return jsonify({
+        'charts': [
+            {'id': 'rag_status_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig1))},
+            {'id': 'atl_eligible_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig2))}
+        ]
+    })
+
+def get_wfm_status_charts(selected_categories=None):
+    if current_data is None:
+        return jsonify({'error': 'No data available'}), 400
+        
+    df = filter_by_categories(current_data, selected_categories)
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
+    
+    if 'WFM Plan Status' in df.columns:
+        wfm_counts = df['WFM Plan Status'].value_counts()
+        fig = go.Figure(data=[go.Bar(x=wfm_counts.index.tolist(), y=wfm_counts.values.tolist())])
+        fig.update_layout(title=f"WFM Plan Status Distribution {category_text}", height=400, xaxis_title="WFM Plan Status", yaxis_title="Count")
+    else:
+        fig = go.Figure()
+        fig.update_layout(title=f"WFM Plan Status - No Data Available {category_text}", height=400)
+    
+    return jsonify({
+        'charts': [
+            {'id': 'wfm_plan_status_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+        ]
+    })
+
+def get_bgv_charts(selected_categories=None):
+    if current_data is None:
+        return jsonify({'error': 'No data available'}), 400
+        
+    df = filter_by_categories(current_data, selected_categories)
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
+    
+    if 'BGV Closure Status' in df.columns:
+        bgv_counts = df['BGV Closure Status'].value_counts()
+        total_records = len(df)
+        blank_count = total_records - bgv_counts.sum()
+        if blank_count > 0:
+            bgv_counts['Blank'] = blank_count
+        
+        fig = go.Figure(data=[go.Bar(x=bgv_counts.index.tolist(), y=bgv_counts.values.tolist())])
+        fig.update_layout(title=f"BGV Closure Status Distribution {category_text}", height=400, xaxis_title="BGV Closure Status", yaxis_title="Count")
+    else:
+        fig = go.Figure()
+        fig.update_layout(title=f"BGV Closure Status - No Data Available {category_text}", height=400)
+    
+    return jsonify({
+        'charts': [
+            {'id': 'bgv_closure_status_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+        ]
+    })
+
+
+def get_ageing_charts(selected_categories=None, project_filter=None):
+    if current_data is None:
+        return jsonify({'error': 'No data available'}), 400
+        
+    df = filter_by_categories(current_data, selected_categories)
+    
+    if project_filter:
+        df = df[df['Project Name'] == project_filter]
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    category_text = f"({', '.join(selected_categories)})" if selected_categories else "(All Categories)"
+    
+    if 'Actual Ageing' in df.columns:
+        ageing_weeks = {}
+        for _, row in df.iterrows():
+            days = row['Actual Ageing']
+            if pd.notna(days) and days >= 0:
+                if days < 29:
+                    week_label = "Week 0-4"
+                elif days <= 56:
+                    week_label = "Week 4-8"
+                elif days <= 84:
+                    week_label = "Week 9-12"
+                else:
+                    week_label = "Week 13+"
+                
+                ageing_weeks[week_label] = ageing_weeks.get(week_label, 0) + 1
+        
+        if ageing_weeks:
+            week_order = ["Week 0-4", "Week 4-8", "Week 9-12", "Week 13+"]
+            sorted_weeks = [(week, ageing_weeks.get(week, 0)) for week in week_order if ageing_weeks.get(week, 0) > 0]
+            labels, values = zip(*sorted_weeks) if sorted_weeks else ([], [])
+            
+            fig = go.Figure(data=[go.Bar(x=list(labels), y=list(values))])
+            project_text = f" - {project_filter}" if project_filter else ""
+            fig.update_layout(
+                title=f"Ageing Distribution (28-day Intervals) {category_text}{project_text}", 
+                height=500,
+                xaxis_title="Week Ranges",
+                yaxis_title="Number of Employees"
+            )
+        else:
+            fig = go.Figure()
+            fig.update_layout(title=f"Ageing Distribution - No Data Available {category_text}", height=500)
+    else:
+        fig = go.Figure()
+        fig.update_layout(title=f"Ageing Distribution - Actual Ageing Column Not Found {category_text}", height=500)
+    
+    return jsonify({
+        'charts': [
+            {'id': 'ageing_chart', 'data': json.loads(plotly.utils.PlotlyJSONEncoder().encode(fig))}
+        ]
+    })
+
+@app.route('/data_preview')
+def data_preview():
+    global current_data
+    
+    if current_data is None:
+        return jsonify({'error': 'No data available'}), 400
+    
+    categories_param = request.args.get('categories', '')
+    selected_categories = categories_param.split(',') if categories_param else []
+    
+    df = filter_by_categories(current_data, selected_categories)
+    
+    if len(df) == 0:
+        return jsonify({'message': 'No employees found for the selected categories'})
+    
+    display_columns = ['Employee Code', 'Employee Name', 'Gender', 'Level', 
+                      'Location', 'Status', 'Tech1 Primary Skill', 'Total Experience']
+    
+    available_columns = [col for col in display_columns if col in df.columns]
+    preview_data = df[available_columns].head(100)
+    
+    return jsonify({
+        'columns': available_columns,
+        'data': preview_data.to_dict('records'),
+        'total_rows': len(df)
+    })
+
+@app.route('/drill_down')
+def drill_down():
+    global current_data
+    
+    if current_data is None:
+        return jsonify({'error': 'No data available'}), 400
+    
+    chart_id = request.args.get('chart_id')
+    filter_value = request.args.get('filter_value')
+    additional_filter = request.args.get('additional_filter')
+    
+    sort_column = request.args.get('sort_column', 'Employee Name')
+    sort_direction = request.args.get('sort_direction', 'asc')
+    page = int(request.args.get('page', 1))
+    page_size = int(request.args.get('page_size', 25))
+    visible_columns = request.args.get('visible_columns', '').split(',') if request.args.get('visible_columns') else None
+    search_term = request.args.get('search_term', '')
+    export_format = request.args.get('export_format')
+    
+    chart_column_map = {
+        'status_chart': 'Status',
+        'location_chart': 'State',
+        'ageing_chart': 'Actual Ageing',
+        'skills_chart': 'Tech1 Primary Skill',
+        'experience_slab_chart': 'Total Experience',
+        'rag_status_chart': 'Associate RAG Status',
+        'atl_eligible_chart': 'ATL Eligible',
+        'wfm_plan_status_chart': 'WFM Plan Status',
+        'bgv_closure_status_chart': 'BGV Closure Status'
+    }
+    
+    try:
+        categories_param = request.args.get('categories', '')
+        selected_categories = categories_param.split(',') if categories_param else []
+        df = filter_by_categories(current_data, selected_categories)
+        
+        if chart_id == 'experience_chart':
+            exp_value = float(filter_value)
+            df = df[(df['Total Experience'] >= exp_value-0.5) & (df['Total Experience'] < exp_value+0.5)]
+        elif chart_id == 'bench_ageing_chart':
+            if filter_value == '0-2 weeks':
+                df = df[df['Current Ageing'] <= 14]
+            elif filter_value == '2-4 weeks':
+                df = df[(df['Current Ageing'] > 14) & (df['Current Ageing'] <= 28)]
+            elif filter_value == '4-8 weeks':
+                df = df[(df['Current Ageing'] > 28) & (df['Current Ageing'] <= 56)]
+            elif filter_value == '8+ weeks':
+                df = df[df['Current Ageing'] > 56]
+        elif chart_id == 'ageing_chart':
+            if filter_value == "Week 0-4":
+                df = df[df['Actual Ageing'] < 29]
+            elif filter_value == "Week 4-8":
+                df = df[(df['Actual Ageing'] >= 29) & (df['Actual Ageing'] <= 56)]
+            elif filter_value == "Week 9-12":
+                df = df[(df['Actual Ageing'] >= 57) & (df['Actual Ageing'] <= 84)]
+            elif filter_value == "Week 13+":
+                df = df[df['Actual Ageing'] >= 85]
+            
+            if additional_filter:
+                df = df[df['Project Name'] == additional_filter]
+        elif chart_id == 'experience_slab_chart':
+            if filter_value == '0-2 years':
+                df = df[df['Total Experience'] < 2]
+            elif filter_value == '2-5 years':
+                df = df[(df['Total Experience'] >= 2) & (df['Total Experience'] < 5)]
+            elif filter_value == '5-10 years':
+                df = df[(df['Total Experience'] >= 5) & (df['Total Experience'] < 10)]
+            elif filter_value == '10+ years':
+                df = df[df['Total Experience'] >= 10]
+        elif chart_id == 'location_status_chart':
+            df = df[df['Location'] == filter_value]
+            if additional_filter:
+                df = df[df['Status'] == additional_filter]
+        elif chart_id == 'projected_bench_chart':
+            try:
+                month_year = pd.to_datetime(filter_value, format='%b %Y')
+                
+                df['Planned ReleaseDate_parsed'] = pd.to_datetime(df['Planned ReleaseDate'], errors='coerce')
+                df = df[df['Planned ReleaseDate_parsed'].notna()]
+                
+                df = df[
+                    (df['Planned ReleaseDate_parsed'].dt.year == month_year.year) &
+                    (df['Planned ReleaseDate_parsed'].dt.month == month_year.month)
+                ]
+                
+                df = df.drop('Planned ReleaseDate_parsed', axis=1)
+                
+            except (ValueError, TypeError) as e:
+                df = df.iloc[0:0]
+        else:
+            column = chart_column_map.get(chart_id)
+            if column and column in df.columns:
+                df = df[df[column] == filter_value]
+        
+        display_columns = ['Employee Name', 'Designation']
+        
+        if 'Actual Ageing' in df.columns:
+            df['Bench Days'] = df['Actual Ageing']
+        if 'No Of Evaluation' in df.columns:
+            df['Opportunities Given'] = df['No Of Evaluation']
+        if 'ATL Remarks' in df.columns:
+            df['ATL Remarks'] = df['ATL Remarks']
+        if 'Level' in df.columns:
+            df['Level'] = df['Level']
+        
+        if 'City' in df.columns and 'State' in df.columns:
+            df['Location'] = df['City'].astype(str) + ', ' + df['State'].astype(str)
+            df['Location'] = df['Location'].replace('nan, nan', '').replace(', nan', '').replace('nan, ', '')
+        
+        if 'Region' in df.columns:
+            df['Region'] = df['Region']
+        if 'Tech1 Primary Skill' in df.columns:
+            df['Skill'] = df['Tech1 Primary Skill']
+        
+        if 'Tech1 For Training' in df.columns and 'Tech 2 For Training' in df.columns:
+            df['Training'] = df['Tech1 For Training'].astype(str) + ', ' + df['Tech 2 For Training'].astype(str)
+            df['Training'] = df['Training'].replace('nan, nan', '').replace(', nan', '').replace('nan, ', '')
+        
+        if 'Training Status' in df.columns:
+            df['Training Status'] = df['Training Status']
+        if 'WFM Plan Status' in df.columns:
+            df['WFM Plan Status'] = df['WFM Plan Status']
+        
+        new_columns = ['Bench Days', 'Opportunities Given', 'ATL Remarks', 'Level', 'Location', 'Region', 'Skill', 'Training', 'Training Status', 'WFM Plan Status']
+        display_columns.extend([col for col in new_columns if col in df.columns])
+        
+        all_available_columns = display_columns + ['ATL Eligible', 'Resignation Status']
+        available_columns = [col for col in all_available_columns if col in df.columns]
+        
+        if visible_columns:
+            visible_columns = [col for col in visible_columns if col in available_columns]
+            result_df = df[visible_columns] if visible_columns else df[display_columns]
+        else:
+            default_visible = [col for col in display_columns if col in df.columns]
+            result_df = df[default_visible]
+            visible_columns = default_visible
+        
+        if search_term:
+            search_mask = result_df.astype(str).apply(
+                lambda x: x.str.contains(search_term, case=False, na=False)
+            ).any(axis=1)
+            result_df = result_df[search_mask]
+        
+        if sort_column in result_df.columns:
+            ascending = sort_direction.lower() == 'asc'
+            result_df = result_df.sort_values(by=sort_column, ascending=ascending)
+        
+        
+        if export_format in ['csv', 'excel']:
+            if export_format == 'csv':
+                output = io.StringIO()
+                result_df.to_csv(output, index=False)
+                output.seek(0)
+                return Response(
+                    output.getvalue(),
+                    mimetype='text/csv',
+                    headers={'Content-Disposition': f'attachment; filename=employees_{filter_value}.csv'}
+                )
+            elif export_format == 'excel':
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    result_df.to_excel(writer, index=False, sheet_name='Employees')
+                output.seek(0)
+                return Response(
+                    output.getvalue(),
+                    mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    headers={'Content-Disposition': f'attachment; filename=employees_{filter_value}.xlsx'}
+                )
+        
+        total_count = len(result_df)
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        paginated_df = result_df.iloc[start_idx:end_idx]
+        
+        paginated_df_clean = paginated_df.fillna('')
+        
+        return jsonify({
+            'success': True,
+            'data': paginated_df_clean.to_dict('records'),
+            'columns': visible_columns,
+            'available_columns': available_columns,
+            'total_count': total_count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': (total_count + page_size - 1) // page_size,
+            'sort_column': sort_column,
+            'sort_direction': sort_direction,
+            'filter_info': {
+                'chart_id': chart_id,
+                'filter_value': filter_value,
+                'additional_filter': additional_filter
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Drill-down failed: {str(e)}'}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8050, debug=True)
